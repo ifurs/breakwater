@@ -37,6 +37,7 @@
     <string name="settings_allowlist_title">Allowed words &amp; sites</string>
     <string name="settings_allowlist_subtitle">Words here excuse strict keyword matches and your blocked words. An allowed site skips both on that site.</string>
     <string name="settings_allowlist_subtitle_strict">Words here excuse strict keyword matches and your blocked words. An allowed site skips both on that site. Adding one requires the unlock challenge.</string>
+    <string name="settings_difficulty_unlock_prompt">Make the Strict Mode challenge shorter</string>
     <string name="settings_allowlist_unlock_prompt">Add an allowed word or site</string>
     <string name="settings_allowlist_empty">No exceptions yet.</string>
     <string name="settings_list_invalid">Enter a word or a site, up to %1$d characters.</string>

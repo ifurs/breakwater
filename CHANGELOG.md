@@ -16,6 +16,7 @@ All notable changes to Nudge are documented here. Format follows [Keep a Changel
 - Manage Apps, Stats and Settings no longer have a back arrow, because they are main screens now.
 
 ### Fixed
+- Lowering the Strict Mode difficulty while Strict Mode is on now asks for the unlock challenge first, like every other change that weakens it. Raising it is still instant.
 - Strict Mode's Settings guard no longer misses a page because Settings wrote a non-breaking space or a curly apostrophe in it.
 - With Strict Mode on, switching a short-video block off on Home can no longer skip the challenge when you switch the same block on and off in quick succession.
 - With Strict Mode on, App config now asks for the challenge when you remove or soften an in-app feature block (Reels, Shorts, the TikTok feed), for example Hard Block back to "Same as app". It used to save without one. Making one stricter or adding one stays free.

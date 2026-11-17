@@ -35,6 +35,7 @@
     <string name="settings_allowlist_title">Дозволені слова й сайти</string>
     <string name="settings_allowlist_subtitle">Слова тут роблять винятки для суворого зіставлення та ваших заблокованих слів. Дозволений сайт пропускає і те, й інше на цьому сайті.</string>
     <string name="settings_allowlist_subtitle_strict">Слова тут роблять винятки для суворого зіставлення та ваших заблокованих слів. Дозволений сайт пропускає і те, й інше на цьому сайті. Щоб додати запис, потрібно пройти завдання для розблокування.</string>
+    <string name="settings_difficulty_unlock_prompt">Зробити завдання суворого режиму коротшим</string>
     <string name="settings_allowlist_unlock_prompt">Додати дозволене слово або сайт</string>
     <string name="settings_allowlist_empty">Винятків поки немає.</string>
     <string name="settings_list_invalid">Введіть слово або сайт, до %1$d символів.</string>
