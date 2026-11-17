@@ -24,8 +24,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.astraedus.nudge.domain.nuke.NukeProfiles
 import com.astraedus.nudge.ui.components.AppListItem
 import com.astraedus.nudge.ui.nuke.NukeUnlockHost
 import com.astraedus.nudge.ui.nuke.hasAnyCamera
@@ -66,6 +69,13 @@ fun NukeScreen(
     val scanRequest by viewModel.scanRequest.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val unlock by viewModel.unlock.collectAsStateWithLifecycle()
+    val applied by viewModel.applied.collectAsStateWithLifecycle()
+    val timerLeftMs by viewModel.timerLeftMs.collectAsStateWithLifecycle()
+
+    // Which profile dialog is open. Names only, so they survive a rotation.
+    var savingProfile by rememberSaveable { mutableStateOf(false) }
+    var renamingProfile by rememberSaveable { mutableStateOf<String?>(null) }
+    var deletingProfile by rememberSaveable { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -103,6 +113,17 @@ fun NukeScreen(
         viewModel.consumeMessage()
     }
 
+    LaunchedEffect(applied) {
+        val switched = applied ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.nuke_profile_switched, switched.name),
+            actionLabel = context.getString(R.string.nuke_profile_undo),
+            duration = SnackbarDuration.Short
+        )
+        viewModel.consumeApplied()
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoApplyProfile(switched)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -137,7 +158,9 @@ fun NukeScreen(
                     hasCamera = hasCamera,
                     onScanToggle = { viewModel.requestScan(NukeScanPurpose.TOGGLE) },
                     onNukeNow = viewModel::nukeNow,
-                    onEmergencyEnd = viewModel::endWithEmergencyCode
+                    onEmergencyEnd = viewModel::endWithEmergencyCode,
+                    timerLeftMs = timerLeftMs,
+                    onPickTimer = viewModel::setTimerChoice
                 )
             }
 
@@ -152,10 +175,9 @@ fun NukeScreen(
             }
 
             item {
-                Text(
-                    stringResource(R.string.nuke_apps_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                NukeListHeader(
+                    canSave = state.canSaveProfile,
+                    onSaveAsProfile = { savingProfile = true }
                 )
             }
 
@@ -165,6 +187,19 @@ fun NukeScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            // Under the caption, so with no profiles the top of this section is exactly as before.
+            if (state.profiles.isNotEmpty()) {
+                item {
+                    NukeProfileChips(
+                        chips = state.profiles,
+                        nukeActive = state.active,
+                        onApply = viewModel::applyProfile,
+                        onRename = { renamingProfile = it },
+                        onDelete = { deletingProfile = it }
+                    )
+                }
             }
 
             item {
@@ -217,6 +252,47 @@ fun NukeScreen(
             },
             onConfirmScan = { viewModel.requestScan(NukeScanPurpose.CONFIRM_NEW_QR) },
             onCancel = viewModel::cancelPairing
+        )
+    }
+
+    if (savingProfile) {
+        // Starts empty: the link is only offered when the list is not already a saved profile.
+        // Typing an existing name saves over it ("Update").
+        NukeProfileNameDialog(
+            title = stringResource(R.string.nuke_save_as_profile),
+            initialName = "",
+            confirmLabel = { name ->
+                stringResource(
+                    if (state.profiles.any { it.name.equals(NukeProfiles.normalizeName(name), ignoreCase = true) }) {
+                        R.string.nuke_profile_update
+                    } else {
+                        R.string.components_action_save
+                    }
+                )
+            },
+            submit = viewModel::saveProfile,
+            onDismiss = { savingProfile = false }
+        )
+    }
+
+    renamingProfile?.let { oldName ->
+        NukeProfileNameDialog(
+            title = stringResource(R.string.nuke_profile_rename_title),
+            initialName = oldName,
+            confirmLabel = { stringResource(R.string.nuke_profile_rename) },
+            submit = { newName -> viewModel.renameProfile(oldName, newName) },
+            onDismiss = { renamingProfile = null }
+        )
+    }
+
+    deletingProfile?.let { name ->
+        NukeDeleteProfileDialog(
+            name = name,
+            onConfirm = {
+                viewModel.deleteProfile(name)
+                deletingProfile = null
+            },
+            onDismiss = { deletingProfile = null }
         )
     }
 

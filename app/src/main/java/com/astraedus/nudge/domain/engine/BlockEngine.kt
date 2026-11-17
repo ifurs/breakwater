@@ -33,7 +33,7 @@ class BlockEngine internal constructor(
      *   list contains this feature will be considered. Whole-app rules are also considered unless
      *   [includeWholeAppRulesForFeature] is false.
      *
-     * Priority: NUKE > HARD_BLOCK > time budget exceeded > DELAY > HOLD > BREATHING > Allow
+     * Priority: NUKE > HARD_BLOCK > time budget exceeded > DELAY > HOLD > MIRROR > BREATHING > Allow
      *
      * @param nuked whether Nuke Mode covers [packageName] right now
      *   ([com.astraedus.nudge.domain.nuke.NukePolicy.isNuked], decided by the caller because it
@@ -136,7 +136,8 @@ class BlockEngine internal constructor(
                 tabVanish = timeBudgetRule.tabVanish,
                 feature = featureDecidedBy(timeBudgetRule, detectedFeature),
                 until = budgetUntilOf(timeBudgetRule, now),
-                allApps = timeBudgetRule.allApps
+                allApps = timeBudgetRule.allApps,
+                budgetResetAt = nextMidnight(now)
             )
         }
 
@@ -200,15 +201,15 @@ class BlockEngine internal constructor(
      */
     private fun budgetUntilOf(rule: ActiveRule, now: Calendar): Long? {
         val windowEnd = untilOf(rule, now) ?: return null
-        val midnight = (now.clone() as Calendar).apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.DAY_OF_MONTH, 1)
-        }.timeInMillis
-        return minOf(windowEnd, midnight)
+        return minOf(windowEnd, nextMidnight(now))
     }
+
+    /**
+     * When today's usage starts again from zero. Shared with `ScheduleBoundaries`, which wakes the
+     * block screen at this instant, so the two can never name different midnights.
+     */
+    private fun nextMidnight(now: Calendar): Long =
+        ScheduleWalk.nextLocalMidnight(now.timeInMillis, now.timeZone.toZoneId())
 
     companion object {
         /** What the overlay's rule footer calls a Nuke block. */
@@ -235,12 +236,13 @@ class BlockEngine internal constructor(
          * wall-clock time (see `RuleWeakening.modeStrength`, which ranks them equal); the order
          * within the pair only decides which rule wins when a user has configured both for one app
          * at the same moment, and DELAY first keeps that answer identical to what it was before
-         * HOLD existed.
+         * HOLD existed. [BlockMode.MIRROR] is the same price again (a DELAY with the front camera
+         * as its picture), so it joins the tier after HOLD: adding it changes no existing answer.
          *
          * NOT `BlockMode.entries`: [BlockMode.NONE] gates nothing and [BlockMode.HARD_BLOCK] is
          * decided above, ahead of the daily budget.
          */
         private val TIMED_MODES_STRONGEST_FIRST =
-            listOf(BlockMode.DELAY, BlockMode.HOLD, BlockMode.BREATHING)
+            listOf(BlockMode.DELAY, BlockMode.HOLD, BlockMode.MIRROR, BlockMode.BREATHING)
     }
 }

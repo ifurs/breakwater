@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: 2026-11-02**
+**Last updated: 2026-11-09**
 
 Nudge is a privacy-first, open-source app blocker — an Android app and a Chrome extension. This policy explains what data Nudge handles and how. The sections below cover the Android app; see [Chrome Extension](#chrome-extension) for the extension.
 
@@ -12,7 +12,7 @@ Nudge has **no internet permission**. It physically cannot send data anywhere. E
 
 Nudge stores the following data **locally on your device only**, using Room (SQLite) and Android DataStore:
 
-- **Block rules** -- which apps you've configured to block and how (hard block, delay, breathing exercise)
+- **Block rules** -- which apps you've configured to block and how (hard block, delay, hold, breathing exercise, mirror)
 - **App groups** -- groups you've created (e.g. "Social Media") and their members
 - **Usage events** -- timestamps of when blocked apps were opened, how long you used them, and whether you walked away or continued
 - **Preferences** -- your settings (delay duration, theme, etc.)
@@ -44,6 +44,15 @@ For foreground detection, Nudge receives the **package name** of the active app.
 - Processed in real-time, in memory only. Screen structure is never written to disk.
 - Only the **result** is stored: which app/feature was detected, and whether it was blocked (as a usage event log entry).
 - No internet permission means none of this can leave your device regardless.
+
+## Camera
+
+Nudge asks for the camera for three features, and only when you use them: scanning the QR/barcode key for Nuke Mode, the **Mirror** block mode, which shows your front camera's live preview during the wait before a blocked app opens, and the **Show the camera on block screens** setting (off unless you turn it on), which shows that same preview behind every block screen.
+
+- The preview goes straight from the camera to your screen. It is **never recorded, saved, photographed or analysed**, and no frame is kept after the screen closes.
+- The camera is open only while a Mirror countdown or a block screen with the camera setting on is on screen. It closes when the countdown or the block ends, when you leave, or when the screen goes to the background.
+- Saying no to the camera is fine: Mirror then shows the normal countdown instead, and block screens stay plain.
+- With no internet permission, no image could leave your device in any case.
 
 ## What Nudge does NOT do
 

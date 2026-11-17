@@ -73,7 +73,7 @@ import com.astraedus.nudge.ui.components.categoryTitle
 import com.astraedus.nudge.ui.components.shortCategoryTitle
 import com.astraedus.nudge.ui.components.rule.AllAppsIcon
 import com.astraedus.nudge.ui.components.rule.AllAppsRuleItem
-import com.astraedus.nudge.ui.components.rule.BlockModeSegmentedRow
+import com.astraedus.nudge.ui.components.rule.BlockModePicker
 import com.astraedus.nudge.ui.components.rule.DailyLimitChips
 import com.astraedus.nudge.ui.components.rule.DayStartDialog
 import com.astraedus.nudge.ui.components.rule.EditorAddRow
@@ -396,7 +396,7 @@ private fun BlockingFields(
         Spacer(Modifier.height(0.dp))
         EditorSubsectionTitle(stringResource(R.string.groups_how))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            BlockModeSegmentedRow(
+            BlockModePicker(
                 selected = form.mode,
                 onSelect = { mode -> onFormChange { it.copy(mode = mode) } },
                 compact = true

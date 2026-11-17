@@ -20,6 +20,36 @@ All notable changes to Nudge are documented here. Format follows [Keep a Changel
 - With Strict Mode on, switching a short-video block off on Home can no longer skip the challenge when you switch the same block on and off in quick succession.
 - With Strict Mode on, App config now asks for the challenge when you remove or soften an in-app feature block (Reels, Shorts, the TikTok feed), for example Hard Block back to "Same as app". It used to save without one. Making one stricter or adding one stays free.
 
+## [1.31.0] - 2026-11-17
+
+### Added
+- **Nuke profiles.** Save your Nuke list under a name ("Save as profile" next to "Apps to nuke") and switch between saved lists with one tap while Nuke is off, with Undo. Profiles show as chips; tap the one in use to rename or delete it. A profile is only a saved copy of the list: editing or deleting one never changes a Nuke that is running, switching is refused while Nuke is on, and your essential apps stay unblockable whatever a profile holds. Up to 10 profiles, names up to 30 characters. Profiles stay on this phone and are not part of backups. (#183)
+- **Timed Nuke.** "Lock code for" before you start (None, 15, 30 or 45 minutes, 1 or 2 hours). Until it has run, your key does not end Nuke or take apps off, change or remove the key, or turn Nudge off; the card says "Code locked" and how long is left. Adding apps still works, and the 64-character emergency code works at any time. When the lock runs out nothing unlocks by itself: scan your key as usual. The timer counts phone-on time and ignores the date, time and time-zone settings, and a restart keeps the time already counted. (#184)
+
+## [1.30.1] - 2026-11-12
+
+### Fixed
+- **"Bro. wtf." now counts only apps you opened.** A share sheet, a photo or account picker, a passkey prompt or the home screen no longer counts as an app, so opening two apps can't read "bounced through 4 apps". Opening a sheet over a blocked app is not leaving it either, so the block screen coming back doesn't count as a second wall. An app Nudge hasn't looked up yet counts as soon as the lookup lands. (#181)
+- With debug logging on, a check-in now writes which apps it counted, and which windows it left out and why, to the `NudgeA11yTrace` log. Package names only, never a website. (#181)
+
+## [1.30.0] - 2026-11-10
+
+### Added
+- **Show the camera on block screens.** A new switch in Settings, off by default. When it is on, every block screen (hard block, daily limit reached, schedules, Nuke, Delay, Hold, Breathing, and the screen that keeps you out after being kicked out of an app) shows your front camera behind its usual message and buttons, so you see yourself instead of a plain screen. Nothing else about the block changes: same waits, same exits, same Strict Mode. Turning it on asks for the camera. Without the camera (denied, missing, or in use by another app) block screens stay plain. Nothing is recorded, saved or analysed. The setting is included in backups.
+
+## [1.29.0] - 2026-11-09
+
+### Added
+- **Mirror block mode.** Instead of a block screen, the wait shows your own face from the front camera, with the countdown and "Still want it?" over it. It works like Delay: same wait times, same "I changed my mind", redirect bubble and daily pass, and the same strength under Strict Mode. Picking Mirror asks for the camera. Without the camera (denied, missing, or in use by another app), Mirror shows the normal Delay countdown for the same wait instead. The preview is never recorded, saved or analysed. The block-mode picker is now a row of chips so five modes fit.
+
+## [1.28.1] - 2026-11-09
+
+### Fixed
+- **A schedule now starts over an app you already have open.** An app opened at 9:55 under a 10:00 to 11:00 rule used to stay usable past 10:00 until you left it. At 10:00 the block now arrives exactly as it would on a fresh open, and a Delay schedule shows its countdown over the app. A pass you already earned under a Delay rule still lasts its sitting. Nudge waits on one timer to the next start or end, not a clock that ticks every minute, and rules with nothing on a clock have no timer at all. (#169)
+- **A block screen now closes when its block ends.** At a schedule's end, or at midnight for a spent daily limit, the screen closes and you are back in the app, unless another rule covers it, which then shows its own block. "Use for 2 minutes" no longer spends the day's pass on a block that has already ended. (#170)
+- "Until" on a block that crosses a daylight-saving change no longer names a time an hour off.
+- **A group's daily limit now blocks while you are still in the app.** Before, a group or All apps rule's limit was only checked the next time you opened a member app, so an app left open could run past it. The limit is still per app, as the group editor says. (#146)
+
 ## [1.28.0] - 2026-11-07
 
 ### Added

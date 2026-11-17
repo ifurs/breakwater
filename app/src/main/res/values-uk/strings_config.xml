@@ -22,6 +22,7 @@
     <string name="config_mode_delay">Затримка</string>
     <string name="config_mode_hold">Утримання</string>
     <string name="config_mode_breathing">Дихальна пауза</string>
+    <string name="config_mode_mirror">Дзеркало</string>
     <string name="config_tab_vanish_title">Приховати вкладку %1$s</string>
     <string name="config_tab_vanish_description">Поки %1$s заблоковано, Nudge закриває вкладку %1$s на нижній панелі %2$s: значка немає, а торкання нічого не робить. Решта %2$s працює як зазвичай.</string>
     <string name="config_following_title">Відкривати «Підписки» замість головної</string>

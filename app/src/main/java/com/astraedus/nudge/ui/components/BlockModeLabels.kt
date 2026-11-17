@@ -26,13 +26,14 @@ internal fun blockModeLabelRes(mode: BlockMode): Int = when (mode) {
     BlockMode.DELAY -> R.string.components_block_mode_delay
     BlockMode.HOLD -> R.string.components_block_mode_hold
     BlockMode.BREATHING -> R.string.components_block_mode_breathing
+    BlockMode.MIRROR -> R.string.components_block_mode_mirror
 }
 
 @Composable
 internal fun blockModeLabel(mode: BlockMode): String = stringResource(blockModeLabelRes(mode))
 
 /**
- * The label inside a four-segment picker row, where each segment is about a quarter of the screen.
+ * The label inside a compact picker, where each option gets a fraction of the screen width.
  * One word each: "Hard Block" in a quarter-width segment with `maxLines = 1` was clipped to "Hard"
  * and, overflowing, drawn off-centre (device QA, groups PR 2).
  */
@@ -40,7 +41,7 @@ internal fun blockModeLabel(mode: BlockMode): String = stringResource(blockModeL
 internal fun blockModeShortLabelRes(mode: BlockMode): Int = when (mode) {
     BlockMode.HARD_BLOCK -> R.string.components_block_mode_short_hard_block
     BlockMode.BREATHING -> R.string.components_block_mode_short_breathing
-    BlockMode.NONE, BlockMode.DELAY, BlockMode.HOLD -> blockModeLabelRes(mode)
+    BlockMode.NONE, BlockMode.DELAY, BlockMode.HOLD, BlockMode.MIRROR -> blockModeLabelRes(mode)
 }
 
 @Composable
@@ -59,6 +60,8 @@ internal fun blockModeDescriptionRes(mode: BlockMode, manyApps: Boolean): Int = 
     BlockMode.DELAY -> R.string.components_block_mode_desc_delay
     BlockMode.HOLD -> R.string.components_block_mode_desc_hold
     BlockMode.BREATHING -> R.string.components_block_mode_desc_breathing
+    BlockMode.MIRROR ->
+        if (manyApps) R.string.components_block_mode_desc_mirror_many else R.string.components_block_mode_desc_mirror_one
 }
 
 @Composable

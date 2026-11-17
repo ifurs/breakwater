@@ -129,4 +129,9 @@
     <string name="settings_gs_clipboard_label">Команда ADB</string>
     <string name="settings_gs_copied">Скопійовано в буфер обміну</string>
     <string name="settings_gs_copy_command">Копіювати команду</string>
+
+    <!-- Камера на екранах блокування -->
+    <string name="settings_camera_title">Показувати камеру на екранах блокування</string>
+    <string name="settings_camera_subtitle">Ви бачите себе замість звичайного екрана. Нічого не записується.</string>
+    <string name="settings_camera_off_note">Доступ до камери вимкнено, тож екрани блокування лишаються звичайними.</string>
 </resources>

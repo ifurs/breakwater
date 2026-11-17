@@ -57,6 +57,7 @@
     <string name="components_block_mode_delay">Delay</string>
     <string name="components_block_mode_hold">Hold</string>
     <string name="components_block_mode_breathing">Breathing</string>
+    <string name="components_block_mode_mirror">Mirror</string>
     <string name="components_block_mode_short_hard_block">Hard</string>
     <string name="components_block_mode_short_breathing">Breathing</string>
     <string name="components_block_mode_desc_none">Not blocked.</string>
@@ -65,6 +66,8 @@
     <string name="components_block_mode_desc_delay">Shows a countdown timer before letting you in. Gives you time to reconsider.</string>
     <string name="components_block_mode_desc_hold">You hold a button for the whole wait. Let go and it starts over.</string>
     <string name="components_block_mode_desc_breathing">Guides you through a breathing exercise before opening. Calms the impulse.</string>
+    <string name="components_block_mode_desc_mirror_one">Shows your front camera for the wait, before the app opens.</string>
+    <string name="components_block_mode_desc_mirror_many">Shows your front camera for the wait, before they open.</string>
 
     <!-- App categories: chip titles, then the short tag on a member row. -->
     <string name="components_category_social">Social &amp; Communication</string>
@@ -149,6 +152,7 @@
     <string name="components_summary_mode_delay">Delay %1$ds</string>
     <string name="components_summary_mode_hold">Hold %1$ds</string>
     <string name="components_summary_mode_breathing">Breathing %1$ds</string>
+    <string name="components_summary_mode_mirror">Mirror %1$ds</string>
     <string name="components_summary_feature_mode">%1$s: %2$s</string>
     <string name="components_summary_limit_minutes">%1$dmin limit</string>
     <string name="components_summary_every_day">Every day %1$s</string>
@@ -173,4 +177,7 @@
         <item quantity="one">%1$s · %2$d app</item>
         <item quantity="other">%1$s · %2$d apps</item>
     </plurals>
+
+    <!-- Mirror block mode -->
+    <string name="components_mirror_camera_off_note">Camera is off, so Mirror shows a countdown instead.</string>
 </resources>

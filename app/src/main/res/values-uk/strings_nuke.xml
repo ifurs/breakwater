@@ -88,4 +88,56 @@
     <string name="lock_guard_prompt_strict">Суворий режим захищає цей екран. Розблокуйте, щоб змінити системні налаштування Nudge, або поверніться назад.</string>
     <string name="lock_guard_title_nuke">Ядерний режим увімкнено</string>
     <string name="lock_guard_title_strict">Суворий режим заблоковано</string>
+
+    <!-- Профілі ядерного режиму (#183) -->
+    <string name="nuke_save_as_profile">Зберегти як профіль</string>
+    <string name="nuke_profile_chip_desc">Профіль %1$s</string>
+    <string name="nuke_profile_chip_desc_selected">Профіль %1$s, використовується</string>
+    <string name="nuke_profile_rename">Перейменувати</string>
+    <string name="nuke_profile_name_label">Назва</string>
+    <string name="nuke_profile_update">Оновити</string>
+    <string name="nuke_profile_rename_title">Перейменувати профіль</string>
+    <string name="nuke_profile_delete_title">Видалити «%1$s»?</string>
+    <string name="nuke_profile_switched">Перемкнено на «%1$s».</string>
+    <string name="nuke_profile_undo">Скасувати</string>
+    <string name="nuke_profile_err_blank">Дайте профілю назву.</string>
+    <plurals name="nuke_profile_err_too_long">
+        <item quantity="one">Не більше %1$d символа.</item>
+        <item quantity="few">Не більше %1$d символів.</item>
+        <item quantity="many">Не більше %1$d символів.</item>
+        <item quantity="other">Не більше %1$d символа.</item>
+    </plurals>
+    <string name="nuke_profile_err_taken">Профіль із такою назвою вже є.</string>
+    <plurals name="nuke_profile_err_too_many">
+        <item quantity="one">Можна зберігати до %1$d профілю.</item>
+        <item quantity="few">Можна зберігати до %1$d профілів.</item>
+        <item quantity="many">Можна зберігати до %1$d профілів.</item>
+        <item quantity="other">Можна зберігати до %1$d профілю.</item>
+    </plurals>
+    <string name="nuke_profile_err_not_found">Цього профілю вже немає.</string>
+    <string name="nuke_msg_profile_while_on">Завершіть ядерний режим, щоб перемикати профілі.</string>
+
+    <!-- Блокування ядерного коду (#184) -->
+    <string name="nuke_timer_picker_label">Заблокувати код на</string>
+    <string name="nuke_timer_picker_desc">%1$s: %2$s</string>
+    <string name="nuke_timer_choice_none">Без блокування</string>
+    <string name="nuke_timer_choice_minutes">%1$d хв</string>
+    <plurals name="nuke_timer_choice_hours">
+        <item quantity="one">%1$d година</item>
+        <item quantity="few">%1$d години</item>
+        <item quantity="many">%1$d годин</item>
+        <item quantity="other">%1$d години</item>
+    </plurals>
+    <string name="nuke_timer_left_minutes">%1$d хв</string>
+    <string name="nuke_timer_left_hours">%1$d год</string>
+    <string name="nuke_timer_left_hours_minutes">%1$d год %2$d хв</string>
+    <string name="nuke_timer_status">Код заблоковано · ще %1$s</string>
+    <string name="nuke_timer_refusal_minutes">Код заблоковано ще на %1$d хв. Скануйте ще раз, коли цей час мине.</string>
+    <plurals name="nuke_timer_refusal_hours">
+        <item quantity="one">Код заблоковано ще на %1$d годину. Скануйте ще раз, коли цей час мине.</item>
+        <item quantity="few">Код заблоковано ще на %1$d години. Скануйте ще раз, коли цей час мине.</item>
+        <item quantity="many">Код заблоковано ще на %1$d годин. Скануйте ще раз, коли цей час мине.</item>
+        <item quantity="other">Код заблоковано ще на %1$d години. Скануйте ще раз, коли цей час мине.</item>
+    </plurals>
+    <string name="nuke_timer_refusal_hours_minutes">Код заблоковано ще на %1$d год %2$d хв. Скануйте ще раз, коли цей час мине.</string>
 </resources>

@@ -24,7 +24,7 @@ Covers what a *rule* can express beyond a plain block: schedules, in-app feature
   per rule: `accessibility-event-pipeline.md`, "Per-rule opt-in: a launcher window as an ABSENCE".
 - **Rule editor UX** — info tooltips on all sections, block mode descriptions, per-app rules summary with enable/disable.
   `UnifiedAppConfigScreen` is the only per-app editor (the old `RuleEditorScreen` was deleted). Its reusable, stateless
-  pieces live in `ui/components/rule/`: `InfoButton`, `TimeSelector`, `BlockModeSegmentedRow` (+ `BLOCKING_MODES`),
+  pieces live in `ui/components/rule/`: `InfoButton`, `TimeSelector`, `BlockModePicker` (+ `BLOCKING_MODES`),
   `WaitTimeChips`, `ScheduleSection` (whose days-and-times half is `DaysAndTimesFields`), `DailyLimitChips`, and
   `WhenSection` (the three-way When, with the first-unlock fields and the day-start row). The group and All apps
   editors reuse them; `DeadRuleEditorContractTest` pins it.
@@ -207,7 +207,7 @@ itself, and its first open is blocked.
 |---|---|---|
 | Definition | `domain/groups/GroupDefinition` (`id`, `categories`, `includes`, `excludes`), `OFFERED_CATEGORIES`, `AppCategoryCsv` | The group as the user wrote it. The categories offered are SOCIAL, VIDEO, GAME, NEWS, AUDIO, IMAGE, MAPS, PRODUCTIVITY, in that order; never UNDEFINED. `AppCategoryCsv` is the one reader/writer of `app_groups.categories` (unknown names and UNDEFINED skipped, written in offered order, NULL for none). |
 | Rows | `app_groups.categories` (TEXT NULL), `app_group_members.excluded` (0 = "Add apps", 1 = "Removed by you"), DB 14 -> 15 | The PK `(groupId, packageName)` means an app is never both. `AppGroupDao.saveGroupWithRule(groupId, name, categories, includes, excludes, rule)` diffs rows with `memberRowChanges` (a flip is one write, not delete + add). `getGroupsForPackage` reads include rows only. |
-| The one answer | `domain/groups/GroupMembershipResolver`, built from rows by `groupResolverOf` (`data/repository/GroupDefinitions.kt`) | Every reader asks it: the engine (through `RuleSnapshot.membership`), the browser check, Manage Apps counts and "In Social" lines, App config's "Also covered by", the All apps editor's counts, Home's "N apps blocked", the redirect-app exclusions, the group editor, Strict Mode and the backup. A member row is not a member, so nothing lists rows as members any more. `groupIdsOf(pkg, category, browser)` does not apply essentials: `RuleCoverage` applies them per rule kind. Off the engine, `data/repository/DeviceGroupMembers` is the one place that resolves groups against this phone (installed apps, essentials, browsers, read only when a group checks a category); the redirect app and the All apps block screen both use it. |
+| The one answer | `domain/groups/GroupMembershipResolver`, built from rows by `groupResolverOf` (`data/repository/GroupDefinitions.kt`) | Every reader asks it: the engine (through `RuleSnapshot.membership`), the browser check, Manage Apps counts and "In Social" lines, App config's "Also covered by", the All apps editor's counts, Home's "N apps blocked", the redirect-app exclusions, the group editor, Strict Mode, the backup, and the counter cache that decides which apps get the foreground clock (`service/CounterCacheCoverage`, #146: through `RuleCoverage` on the same `RuleSnapshot` evaluation reads, so a group's members and an All apps rule's apps get the clock exactly when evaluation covers them; see `counter-overlay-and-autokick.md`). A member row is not a member, so nothing lists rows as members any more. `groupIdsOf(pkg, category, browser)` does not apply essentials: `RuleCoverage` applies them per rule kind. Off the engine, `data/repository/DeviceGroupMembers` is the one place that resolves groups against this phone (installed apps, essentials, browsers, read only when a group checks a category); the redirect app and the All apps block screen both use it. |
 | Hot path | `EvaluateBlockUseCase.coverageFacts`, `NudgeAccessibilityService.isCoveredWholeNow` | The category is read only when an enabled rule targets a category group (`RuleCoverage.categoryNeeded`), from the cached `PackageFacts`, and the same fact gives launchable. `browser` is `pkg in EssentialPackages.browsers()` (cached with the essentials). The synchronous browser check (`isCoveredWholeNow`) asks about a browser, so it passes `browser = true` and no category: only a hand-added row can cover it, and it reads no category at all. No PackageManager call is added to the accessibility path. |
 | Editor | `ui/screens/groups/GroupMembersDraft` (pure) + `GroupEditorScreen` | Under "Apps · N": FilterChips for EVERY offered category, titled by Nudge's own `categoryTitle` (`ui/components/CategoryTitle.kt`, pure and exhaustive: "Social & Communication", "Music & Audio", ...; Android's `getCategoryTitle` said "Music and audio", the odd one out) with the count of apps it brings in (installed, minus essentials, minus browsers, minus removed). A category with nothing installed shows 0 and is still offered, so "Games" can be checked before the first game is installed (the first build hid empty chips; device QA showed that made pre-blocking impossible and made a chip vanish once all its apps were removed). "New apps in these categories join automatically." only while one is checked. A category member shows its category's SHORT name as trailing text (`shortCategoryTitle`: "Social & Communication" is "Social"; the full title ellipsised on every row). Its ✕ moves it to "Removed by you" (an app in by hand only, a browser included, is just dropped); that section is collapsed by default, lists only removed apps a checked category would bring in, and has "Add back" per row. Picking a removed app under "Add apps" restores it. Save needs a name and at least a category or a member. |
 | Strict Mode | `groupSaveWeakens` / `groupDeleteWeakens` over `GroupDefinition`s | Judged on the members RESOLVED on this device, so unchecking a category with 0 apps here is free and one with 5 is five apps leaving. See `strict-mode.md`. |
@@ -257,6 +257,64 @@ clock jump forward ends the window early; a time-zone change mid-window keeps th
 stale in the new zone's logical day, which allows apps rather than blocks them; a window opened before the day start
 ends at the boundary, because the new day has no unlock yet. The full matrix, with explicit `ZoneId`s, is
 `FirstUnlockWindowTest` and `ScheduleEvaluatorFirstUnlockTest`.
+
+## Schedule boundaries: one timer to the next start or end (#169, #170)
+
+Before this, a rule was only ever checked when something happened in the app: a window change or an
+arrival. An app opened at 21:55 under a 22:00-23:00 rule stayed open past 22:00 (#169), and a block
+screen up at 22:59 stayed up past 23:00 until the user did something (#170). The clock alone changes
+the answer at four kinds of instant, and nothing was watching them.
+
+| Piece | Where | What it owns |
+|---|---|---|
+| `ScheduleWalk` | `domain/engine/ScheduleWalk.kt` | Pure: `nextStart` and `windowEnd` of a days-and-times window, and `nextLocalMidnight`. It walks ABSOLUTE minutes and reads the wall clock at each, so it agrees with `isActiveAt` across midnight, a days-of-week edge and a DST change. The walk `windowEndAt` used before added wall minutes as absolute ones: across spring-forward its "Until 6:00 AM" said 7:00. Bounded at eight days. |
+| `ScheduleEvaluator.nextStartAt` | `domain/engine/ScheduleEvaluator.kt` | When a rule's window next STARTS, strictly after now. Null for a rule on all the time, every day all day, and a first-unlock rule: an unlock opens that window, and the service already re-checks the app in front when the stamp moves (`reevaluateForegroundForFirstUnlock`). Its END is a time, and `windowEndAt` gives it. |
+| `ScheduleBoundaries.next` | `domain/engine/ScheduleBoundaries.kt` | The earliest boundary over every enabled rule: each one's next start and its window's end, plus the next local midnight when any rule has a daily limit (a spent limit stops blocking at the rollover, even on a rule with no window). Null when nothing is on a clock. |
+| `BlockDecision.Block.endsAt` | `domain/model/BlockDecision.kt`, `BlockEngine` | When the block stops being in force by the clock: the earlier of `until` (the window's end) and `budgetResetAt` (a spent limit's midnight). The block screen closes at it (`docs/architecture/block-overlay-lifecycle.md`, "A block that ends under its screen"). |
+| `ScheduleBoundaryWatch` | `service/ScheduleBoundaryWatch.kt` | The ONE timer. Posts one main-looper `Handler` task to `ScheduleBoundaries.next`, and at it re-checks the app in front through the service's ordinary `evaluateForegroundPackage` (`recheckForegroundAtBoundary`, the shape of `reevaluateForegroundForNuke`), then arms the next one. A re-arm replaces the timer, never adds one. |
+
+**What a boundary re-check does, and does not do.** It goes through `evaluateForegroundPackage`, so
+`grantLetsThrough` (the emergency pass, the auto-kick cooldown, the passthrough grant) runs BEFORE
+the engine. A pass earned under a Delay rule keeps lasting its sitting when a stricter schedule
+starts (groups spec 534-537); the next arrival after the sitting meets the new block. Without a
+grant, the block arrives exactly as a fresh open would, and a Delay schedule shows its countdown
+over the open app. The re-check looks at nothing while Nudge is off, while a block screen is up
+(its own end closes it), or when the window in front is unreadable or Nudge itself
+(`ScheduleBoundaryWatch.recheckTarget`).
+
+**Why a Handler, not AlarmManager.** An exact alarm needs `SCHEDULE_EXACT_ALARM` on API 31+ (a new
+permission, and a Play declaration); an inexact one can be minutes late; either wakes the CPU for a
+screen nobody is looking at. A rule only matters to an app on screen, so the Handler is enough with
+three catch-ups, because `Handler` runs on uptime and does not run in deep sleep or Doze:
+
+- **screen on** (`ACTION_SCREEN_ON`, the shared `unlockReceiver`): re-arm from the wall clock, and
+  if the target has passed, cross it now;
+- **unlock** (`ACTION_USER_PRESENT`): a boundary crossed behind the lock screen (`deviceReady` is
+  `isPastKeyguardNow()`) is re-checked at the unlock, once;
+- **the clock moved** (`ACTION_TIME_CHANGED`, `ACTION_TIMEZONE_CHANGED`, `ACTION_DATE_CHANGED`, the
+  `timeChangeReceiver`): re-check now and re-arm from the new time. A task that fires before its
+  wall-clock target (the clock went back while waiting) re-arms and re-checks nothing.
+
+It also re-arms on every rule snapshot, the master toggle going on (off cancels it), and the
+first-unlock stamp moving. Day rollover is a boundary in its own right when a daily limit exists,
+and otherwise the walk already crosses midnight. Teardown cancels it
+(`cancel_schedule_boundary_watch`).
+
+**#63 holds.** Rules with nothing on a clock post no timer at all, and a schedule-only rule gets no
+per-minute foreground clock (`CounterCacheRefresher.appEntryFor` gives it no tick; pinned by
+`ScheduleBoundaryTriggerPathTest`). The whole cost of a schedule is one wake of the main looper per
+boundary while the screen is on.
+
+**Shared with daily limits:** only `ScheduleWalk.nextLocalMidnight`, used by `BlockEngine` for
+`budgetResetAt` and by `ScheduleBoundaries` for the rollover. A limit running OUT is not a
+boundary: it depends on usage, and the per-app foreground clock watches it (v1.18.4, and #146 for
+group limits).
+
+Tests: `ScheduleWalkTest`, `ScheduleBoundariesTest`, `BlockEngineEndsAtTest`, the DST case in
+`ScheduleEvaluatorWindowEndTest` (L1); `ScheduleBoundaryWatchTest` and
+`ScheduleBoundaryTriggerPathTest` (L3, the second one runs the timer into the real use case and
+engine on one injected clock); `schedule-start-open-app` and `schedule-end-overlay` in
+`scripts/device-qa.sh` (L6, real clock).
 
 ## Manage Apps: one list (spec PR 3)
 

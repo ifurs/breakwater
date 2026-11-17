@@ -76,4 +76,6 @@
     <string name="overlay_rule_web">Сайти - %1$s</string>
     <string name="overlay_rule_content_filter">Обмежений вміст</string>
     <string name="overlay_rule_nuke">Ядерний режим</string>
+
+    <string name="overlay_mirror_still_want">Усе ще хочете цього?</string>
 </resources>

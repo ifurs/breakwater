@@ -2,6 +2,7 @@ package com.astraedus.nudge.ui.screens.nuke
 
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.astraedus.nudge.ui.text.asString
 import com.astraedus.nudge.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.astraedus.nudge.domain.nuke.NukeKeyKind
 import com.astraedus.nudge.domain.nuke.NukePolicy
+import com.astraedus.nudge.ui.nuke.NukeTimerCopy
 import com.astraedus.nudge.ui.qr.QrCodeGenerator
 
 /**
@@ -82,7 +84,9 @@ fun NukeStatusCard(
     hasCamera: Boolean,
     onScanToggle: () -> Unit,
     onNukeNow: () -> Unit,
-    onEmergencyEnd: () -> Unit
+    onEmergencyEnd: () -> Unit,
+    timerLeftMs: Long? = null,
+    onPickTimer: (Int) -> Unit = {}
 ) {
     val containerColor = if (state.active) {
         MaterialTheme.colorScheme.errorContainer
@@ -111,6 +115,12 @@ fun NukeStatusCard(
                 fontWeight = FontWeight.SemiBold,
                 color = contentColor
             )
+            // Only while the code is locked (#184). With no lock, or once it has run out, the card
+            // is exactly the plain ON card.
+            NukeTimerCopy.statusLine(timerLeftMs)?.let { line ->
+                Spacer(Modifier.height(4.dp))
+                Text(line.asString(), style = MaterialTheme.typography.bodyMedium, color = contentColor)
+            }
             Spacer(Modifier.height(12.dp))
 
             if (state.active) {
@@ -134,6 +144,15 @@ fun NukeStatusCard(
                     color = contentColor.copy(alpha = 0.75f)
                 )
             } else {
+                // Offered only once there is a key: without one Nuke cannot start at all.
+                if (state.hasKey) {
+                    NukeTimerPicker(
+                        choiceMinutes = state.timerChoiceMinutes,
+                        contentColor = contentColor,
+                        onPick = onPickTimer
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
                 Button(
                     onClick = onScanToggle,
                     enabled = state.hasKey && hasCamera,

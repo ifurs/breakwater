@@ -1,6 +1,12 @@
 # Nudge — Open-Source Android App Blocker
 
-Privacy-first app blocker with delay-to-open (breathing exercises before opening distracting apps), per-app daily time budgets, app groups, schedule-based rules (days and times, or a first-unlock + N minutes window), "all apps except a few" rules (everything but the apps and groups you allow, never your essentials), in-app feature blocking (YouTube Shorts, Instagram Reels, TikTok), Tab Vanish (covering Instagram's Reels tab outright while it is blocked), grayscale mode, Nuke Mode (a second, separate list of apps that simply do not open while Nuke is on: toggled by scanning a QR/barcode key the user keeps somewhere inconvenient, with a typed 64-character emergency exit and no daily pass), and a redirect app (one user-chosen better app, offered as a bubble on every block screen, that a tap walks you away into). Zero internet permission. All data local.
+Privacy-first app blocker with delay-to-open (breathing exercises before opening distracting apps), per-app daily time budgets, app groups, schedule-based rules (days and times, or a first-unlock + N minutes window), "all apps except a few" rules (everything but the apps and groups you allow, never your essentials), in-app feature blocking (YouTube Shorts, Instagram Reels, TikTok), Tab Vanish (covering Instagram's Reels tab outright while it is blocked), grayscale mode, Nuke Mode (a second, separate list of apps that simply do not open while Nuke is on: toggled by scanning a QR/barcode key the user keeps somewhere inconvenient, with a typed 64-character emergency exit and no daily pass; the list can be saved as named profiles to switch between while Nuke is off, and an optional timer keeps the key from ending it for 15 minutes to 2 hours of phone time, the emergency code always excepted), and a redirect app (one user-chosen better app, offered as a bubble on every block screen, that a tap walks you away into). Zero internet permission. All data local.
+
+## Features go through Anti; bug fixes do not (Anti, 2026-11-13)
+
+- **Bug fixes** (ours, or a community PR/issue): judge it, fix it, merge, release. No ask needed.
+- **Anything feature-like** (a new feature, setting, screen or option, a deliberate behaviour change, a feature-request issue, a community PR or spec that adds one, or our own idea): **never build or merge it without Anti's yes.** Send him a Telegram the same session (`~/bin/astra-telegram-send.py`): "Potential feature request for Nudge", one line on what it adds, and the PR/issue links. Log it in `~/ops/WAITING.md` and leave it open.
+- Reviewing, running CI and telling the contributor the owner is deciding are fine. Unsure whether it is a bug or a feature: treat it as a feature.
 
 - GitHub: https://github.com/astraedus/nudge
 - F-Droid MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38398
@@ -130,7 +136,7 @@ AccessibilityService: TYPE_WINDOW_STATE_CHANGED
   (or a state-verified TYPE_WINDOW_CONTENT_CHANGED — see "Content-change app-switch fallback"
    in docs/architecture/foreground-detection.md)
   -> BlockEngine.evaluate(packageName, time, usage)
-  -> BlockDecision: ALLOW | HARD_BLOCK | DELAY | HOLD | BREATHING
+  -> BlockDecision: ALLOW | HARD_BLOCK | DELAY | HOLD | BREATHING | MIRROR
   -> Launch BlockOverlayActivity if not ALLOW
 ```
 
@@ -157,6 +163,9 @@ AccessibilityService: TYPE_WINDOW_STATE_CHANGED
 - `DELAY` — configurable countdown (5/15/30/60s) before app opens
 - `HOLD` — the same duration, but the clock only runs while a finger is held on the screen; letting go puts it back to zero ([#35](https://github.com/astraedus/nudge/issues/35))
 - `BREATHING` — guided breathing exercise before app opens (the signature feature)
+- `MIRROR` — the DELAY countdown over your front-camera preview (`Preview` use case only, never stored); any camera problem falls back to the DELAY body for the same wait, never a bypass. See "MIRROR" in `docs/architecture/block-overlay-lifecycle.md`
+
+**Camera on block screens** (opt-in Settings switch, default off, `cameraOnBlockScreens`): not a mode but a background. `CameraBackdrop` wraps the overlay's `when (mode)` and draws `FrontCameraPreview` under a scrim behind every body except MIRROR; bodies colour their Surface with `overlaySurfaceColor()`. Only the picture changes, never behaviour, and any camera problem is the plain screen. Branch map, contrast rule and lifecycle: "Camera on block screens" in `docs/architecture/block-overlay-lifecycle.md`.
 
 ## Database
 
@@ -199,7 +208,7 @@ one that matches what you are about to edit. Nothing here is optional reading if
 
 ## Testing (never regress)
 
-**Every new feature MUST ship with tests, and CI (`ci.yml`, the full `testDebugUnitTest` + lint) must be green before merge.** Locally run only the scoped tests for what you touched (`./gradlew testDebugUnitTest --tests '<pattern>' --max-workers=2`); the full suite runs on CI, never on the laptop. If tests fail,
+**Every new feature MUST ship with tests, and CI (`ci.yml`, the full `testDebugUnitTest` + lint) must be green before merge.** Locally run only the scoped tests for what you touched (`./gradlew :app:testDebugUnitTest --tests '<pattern>' --max-workers=2`; keep the `:app:`, because an unqualified task also runs `:qa-driver:testDebugUnitTest`, which matches nothing and fails "No tests found for given includes"); the full suite runs on CI, never on the laptop. If tests fail,
 the feature isn't done. When fixing a bug, write the test that reproduces it FIRST. Regression = blocker.
 The domain layer is pure Kotlin with no Android deps, so it is fast to JVM-test and carries the highest bar.
 
@@ -232,7 +241,7 @@ After any feature addition or significant change:
 2. Run the scoped tests locally; open the PR and let `ci.yml` run ALL tests (plus `screenshots.yml`). Merge only on green
 3. After merge, main's Release workflow refreshes the `main-latest` APK (release-signed); the gate installs it with `APK=main`, never a local debug build (the bench carries the release key)
 4. How we test and why, across repos: `~/.claude/context/testing-playbook.md`; this repo's layers: `docs/TESTING.md`
-5. **QA on device** — run `scripts/device-qa.sh all` (scripted gate: 9 cases, ~18 min, PASS/FAIL table, nonzero exit; screenshots to `~/Pictures/screenshots/nudge/qa-<ts>/`). **`all` outlasts a 10-minute tool call**, so an agent without a background shell runs the same cases as three bounded chunks, in this order: `scripts/device-qa.sh group1 && APK=installed scripts/device-qa.sh group2 && APK=installed scripts/device-qa.sh group3` (about 6 / 8 / 7 min; PASS = all three exit 0; `group1` carries `setup` and opens the `crash-check` baseline the other two reuse; `--help` shows which cases are in which). PASS required before push. `device-tester` only for exploratory cases the script does not cover. **Never rebuild it as a Maestro suite** — `UiAutomation` suppresses all other accessibility services, and Nudge is one; why, and the ADB+logcat oracle that replaces it: `docs/TESTING.md` → "L6 — Release-gate device QA". The bench carries the RELEASE key: an install that would change it (e.g. `APK=debug`) refuses unless `ALLOW_CERT_SWITCH=1`; put it back with `APK=main ALLOW_CERT_SWITCH=1 scripts/device-qa.sh setup`.
+5. **QA on device** — run `scripts/device-qa.sh all` (scripted gate, `scripts/device-qa.sh list` names the cases; PASS/FAIL table, nonzero exit; screenshots to `~/Pictures/screenshots/nudge/qa-<ts>/`). **`all` outlasts a 10-minute tool call**, so an agent without a background shell runs the same cases as six bounded chunks, in this order: `scripts/device-qa.sh group1 && APK=installed scripts/device-qa.sh group2 && APK=installed scripts/device-qa.sh group3 && APK=installed scripts/device-qa.sh group4 && APK=installed scripts/device-qa.sh group5 && APK=installed scripts/device-qa.sh group6` (each under 10 min; PASS = all six exit 0; `group6` = Nuke profiles + timer, whose scan steps SKIP on a release APK; `group1` carries `setup` and opens the `crash-check` baseline the others reuse; `--help` shows which cases are in which). PASS required before push. `device-tester` only for exploratory cases the script does not cover. **Never rebuild it as a Maestro suite** — `UiAutomation` suppresses all other accessibility services, and Nudge is one; why, and the ADB+logcat oracle that replaces it: `docs/TESTING.md` → "L6 — Release-gate device QA". The bench carries the RELEASE key: an install that would change it (e.g. `APK=debug`) refuses unless `ALLOW_CERT_SWITCH=1`; put it back with `APK=main ALLOW_CERT_SWITCH=1 scripts/device-qa.sh setup`.
    **The typed successor is `scripts/qa-driver.sh`** (`:qa-driver` instrumented tests against the debug-signed `qa` build type, whose adb-only control receiver lives in `app/src/qa/` and nowhere else). Its UiAutomation sets `FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES`, which keeps Nudge bound (proved, with a control, by its `spike` cases). Not the release gate yet; the rules that keep the qa receiver out of release are merge gates: `docs/TESTING.md` → "L6b".
 6. If QA passes: bump `versionCode` + `versionName` (patch) in `app/build.gradle.kts`
 7. Update CHANGELOG.md with version + date + changes (the DEV-facing record)

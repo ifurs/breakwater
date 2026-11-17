@@ -242,6 +242,7 @@ object RuleSummary {
         "DELAY" -> UiText.of(R.string.components_summary_mode_delay, delaySeconds)
         "HOLD" -> UiText.of(R.string.components_summary_mode_hold, delaySeconds)
         "BREATHING" -> UiText.of(R.string.components_summary_mode_breathing, delaySeconds)
+        "MIRROR" -> UiText.of(R.string.components_summary_mode_mirror, delaySeconds)
         else -> UiText.Raw(mode)
     }
 

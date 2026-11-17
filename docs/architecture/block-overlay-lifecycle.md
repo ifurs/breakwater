@@ -21,6 +21,43 @@ Fix for [#8](https://github.com/astraedus/nudge/issues/8): the delay could be by
 - **Known cosmetic**: rotation recreates the activity, and countdown state is `remember` (not `rememberSaveable`), so the timer restarts at full length. Errs toward *more* delay, never less.
 - **Device-verified** (Pixel 3, 15s DELAY rule on Keep): Home mid-count → wait past the would-be expiry → return shows a fresh full delay with no passthrough grant in logcat; Home → immediate return shows 15/15, not a continued count; rotation mid-count keeps `BlockOverlayActivity` resumed.
 
+### A block that ends under its screen ([#170](https://github.com/astraedus/nudge/issues/170))
+
+A block screen up at 22:59 under a 22:00-23:00 rule used to stay up past 23:00, and "Use for 2
+minutes" there spent the day's one pass on a block that was already over. Now the screen closes at
+its block's end:
+
+- **The end travels with the block.** `handleDecision` puts `BlockDecision.Block.endsAt` in
+  `EXTRA_ENDS_AT`: the earlier of the window's end and, for a spent daily limit, the next local
+  midnight. A daily-limit block on a rule that is on all the time has no `until` but still gets an
+  end. A daily limit spent mid-session reaches the same `handleDecision` (`enforceExhaustedBudget`),
+  so it gets the midnight end too. Absent means nothing on a clock ends this block. The two
+  auto-kick cooldown launches (app and web) set none: a cooldown's countdown is its own end.
+- **`scheduleBlockEnd` waits, `OverlayLifecycle.onBlockEnded` decides.** The wait is a
+  `lifecycleScope` coroutine under `repeatOnLifecycle(STARTED)`, re-reading the wall clock every time
+  it resumes or elapses (`BlockInForce.msUntil`; `delay` runs on uptime, so a clock set back would
+  otherwise close it early). It is NOT on `mainHandler`: a new delivery's `CancelPendingFailSafe`
+  clears every message there. `onBlockEnded` refuses when the token is stale (a newer block was
+  delivered; its end is its own), after a walk-away or a fullscreen hand-off, while finishing or
+  destroyed, or below STARTED. That last one is invariant #8's: a stopped overlay is already finished
+  by `onStopped`, and the end must not be a second finish behind it.
+- **The close is a finish WHILE RESUMED**, which pops the app underneath forward. That pop is the
+  thing the walk-away avoids (#26), and here it is wanted: it fires a real window event, the service
+  evaluates that arrival afresh, and if another rule covers the app its block is launched
+  (`BlockLaunchGuard`'s fingerprint lets a different rule's block through). If none does, the user is
+  back in their app. No pass is granted, so this path cannot skip a rule still in force. Log line:
+  `block ended under the overlay, closing back into the app`.
+- **The pass is spent only while the block is in force.** `onUsePass` asks the pure
+  `BlockInForce.isInForce(endsAt, now)`; `OverlayLifecycle.onEmergencyPassTapped(inForce)` gives
+  `UseEmergencyPass + Finish` while it is, and otherwise closes like the end and keeps the pass (log
+  line `daily pass not spent, the block had already ended`).
+
+Tests: `BlockInForceTest` (L1), `OverlayLifecycleBlockEndTest` (L3), the `EXTRA_ENDS_AT` wiring
+contract in `ScheduleBoundaryTriggerPathTest`, and `schedule-end-overlay` in `scripts/device-qa.sh`
+(L6, real clock). Known edge: a block ending under a second after its launch can meet the service's
+same-package debounce on the pop, and the arrival is then not re-evaluated. A second rule that also
+covers the app then waits for the next window event; not covered by a test.
+
 ## The walk-away path — "I changed my mind" (2026-08-20)
 
 `navigateHome()` is the terminal path for the button on every overlay and for the back button. It is the ONLY writer of `userChangedMind = true`, so it is the sole source of the home screen's "Walked Away" tile and of every number on the Willpower insight page. It had no owner and no voice; both defects were silent, which is why the report arrived as "it just doesn't count".
@@ -291,7 +328,7 @@ Opt-in escape hatch on the block overlays. **ONE 2-minute free window per rollin
 - **`service/EmergencyPassManager.kt`** (`@Singleton`) — modeled on `PassthroughManager`. In-memory `activeUntil: ConcurrentHashMap<pkg, Long>` — the active window stays **per-app** (pressing the pass on Instagram unblocks Instagram, not everything); only the lockout is global. Per-package `kickJobs` so a fresh grant replaces the prior timer. `isPassActive(pkg)` is the non-blocking hot-path check. `usePass(pkg)` opens the window, persists the global lockout (`prefs.recordEmergencyPassUsed(now)`), and schedules `delay(PASS_DURATION_MS) → remove → kickHome()` **only if `isGlobalEnabled`** (a scheduled kick must not fire while Nudge is globally disabled). `cancelAll()` cancels every window + pending kick (called on global-disable). `kickHome()` prefers `NudgeAccessibilityService.requestGoHome()` and falls back to a HOME intent. The active window is in-memory only — a restart ends the window (fail-safe toward re-blocking); only the lockout is persisted.
 - **Prefs** (`NudgePreferences`): `emergencyPassEnabled` (bool, default **true**) + `emergencyPassUsage` (serialized ledger string) + `recordEmergencyPassUsed(now)` (overwrites the ledger with the single global entry — the lockout is global, no per-app merge).
 - **Service integration** (`NudgeAccessibilityService`): `emergencyPassManager()` on the EntryPoint; in `evaluateForegroundPackage`, `if (isPassActive(pkg)) return` placed **before** the auto-kick-cooldown block so an active pass overrides cooldown too. When the window expires the scheduled kick sends the user home AND the next foreground event re-blocks normally (backstop).
-- **UI**: `ui/overlay/EmergencyPassAction.kt` — the pure resolver **plus** one shared composable rendered by every overlay below the primary button: muted `TextButton` "Use for 2 minutes · once a day" when available; a **disabled/greyed** `TextButton` "Daily pass used · next in Xh" when spent (visible, not hidden); nothing otherwise. `internal fun resolveEmergencyPassState(packageName, passEnabled, usage, now, lockoutMs)` → `EmergencyPassUiState(canUse, locked, nextPassMs)` owns the **entire** decision (pseudo-package skip → toggle → `canUseGlobal`/`nextAvailableGlobalMs`); it is pure so it is JVM-tested (`EmergencyPassVisibilityTest`) instead of buried in the Activity. `BlockOverlayActivity` just calls it inside the existing `runBlocking` alongside the message pools (correct on first composition, no flash) and forwards the three fields. Rendered on ALL `BlockOverlayActivity` launch paths — rule blocks (`handleDecision`), auto-kick cooldown DELAY (`evaluateForegroundPackage`), and daily-limit HARD_BLOCK (`TimeRemainingHandler`) — since all set a real package and go through `render()`. Tap → `emergencyPassManager.usePass(pkg); finish()`. Settings master toggle under "Escape Hatch" (live under Strict Mode; enabling it is challenge-gated).
+- **UI**: `ui/overlay/EmergencyPassAction.kt` — the pure resolver **plus** one shared composable rendered by every overlay below the primary button: muted `TextButton` "Use for 2 minutes · once a day" when available; a **disabled/greyed** `TextButton` "Daily pass used · next in Xh" when spent (visible, not hidden); nothing otherwise. `internal fun resolveEmergencyPassState(packageName, passEnabled, usage, now, lockoutMs)` → `EmergencyPassUiState(canUse, locked, nextPassMs)` owns the **entire** decision (pseudo-package skip → toggle → `canUseGlobal`/`nextAvailableGlobalMs`); it is pure so it is JVM-tested (`EmergencyPassVisibilityTest`) instead of buried in the Activity. `BlockOverlayActivity` just calls it inside the existing `runBlocking` alongside the message pools (correct on first composition, no flash) and forwards the three fields. Rendered on ALL `BlockOverlayActivity` launch paths — rule blocks (`handleDecision`), auto-kick cooldown DELAY (`evaluateForegroundPackage`), and daily-limit HARD_BLOCK (`TimeRemainingHandler`) — since all set a real package and go through `render()`. Tap → `emergencyPassManager.usePass(pkg); finish()`, but only while the block is still in force (#170, `OverlayLifecycle.onEmergencyPassTapped`; see "A block that ends under its screen"). Settings master toggle under "Escape Hatch" (live under Strict Mode; enabling it is challenge-gated).
 - **Strict Mode vs. the escape hatch (v1.10.0)** — Strict Mode used to hide the pass on overlays and freeze/grey the Settings toggle. That silently revoked an escape hatch the user had deliberately opted into, so the lock now bites where protection is actually WEAKENED instead: **`resolveEmergencyPassState` takes no strict-mode flag at all** (a regression would have to add the parameter back), and turning the toggle OFF→ON while Strict Mode is on requires the typed unlock challenge. Turning it ON→OFF strengthens protection and is always free. Policy lives in `domain/lock/SettingsWeakening.requiresUnlock(toggle, enable, strictModeEnabled)` with `LockedToggle` = { STRICT_MODE, EMERGENCY_PASS, CONTENT_FILTER, CONTENT_FILTER_STRICT_KEYWORDS } — the Settings-screen sibling of `RuleWeakening`.
 - **Device-verified**: v1.9.0 (per-app 1min); v1.9.2 (global 2min button text, cross-app greyed lockout). v1.10.0 semantics change is unit-tested; device QA pending.
 
@@ -394,3 +431,147 @@ through to `Unit` beside `NONE`.
 what no JVM test can see is whether the target reads as something you press, whether fifteen seconds
 of holding feels like friction or like a bug, and whether TalkBack announces it usefully on a real
 phone.
+
+## MIRROR, your front camera for the wait (2026-11-09)
+
+MIRROR is a DELAY with a different picture. It takes the same `delaySeconds`, the same duration
+picker, the same exits ("I changed my mind", the redirect bubble, the daily pass) and the same one
+completion path (`onTimerComplete`). The only thing that changes is the body: the front camera's
+live preview, mirrored like a selfie, full bleed, with the app name and the countdown number at the
+top, "Still want it?" and the exits at the bottom, and a dark gradient behind both so they stay
+legible over any face or room.
+
+### Shape
+
+- `rememberBlockCountdown` (`ui/overlay/OverlayCountdown.kt`) is the countdown DELAY and MIRROR
+  share. It holds the #8 invariant (ticks only inside `repeatOnLifecycle(RESUMED)`, state remembered
+  outside it) and the exactly-once completion `AtomicBoolean`. `DelayContent` is now
+  `rememberBlockCountdown` + `DelayBody`; `MirrorContent` makes ONE countdown and hands it to
+  whichever body it shows.
+- `MirrorFallback.bodyFor(permissionGranted, hasFrontCamera, cameraFailed)` is the pure decision
+  (`ui/overlay/MirrorFallback.kt`, tested in `MirrorFallbackTest`): the camera body only when all
+  three allow it, otherwise `DelayBody`.
+- `mirrorCameraLifecycleState(parent, open)` decides when the camera is OPEN. CameraX
+  binds the `Preview` use case to a `GatedLifecycleOwner` (the same class `PauseWhile` uses) held at
+  that state: RESUMED only while the block body is RESUMED and `open` holds (for MIRROR: the
+  countdown is running), CREATED otherwise, never above the parent. The camera itself is
+  `FrontCameraPreview` (`ui/overlay/FrontCameraPreview.kt`), the one composable that talks to CameraX
+  for a picture; MIRROR and the camera backdrop below both draw it.
+
+### The fallback rule: the camera is a picture, never a gate
+
+Any of these shows `DelayBody` for the same wait, with the same countdown still running:
+
+- no CAMERA permission (checked when the block opens);
+- no front camera (`PackageManager.FEATURE_CAMERA_FRONT`, then `hasCamera(DEFAULT_FRONT_CAMERA)`);
+- `ProcessCameraProvider` fails to load, `bindToLifecycle` throws, or the camera reports ANY
+  `CameraState.error`, including the "recoverable" in-use ones (another app has the camera).
+
+The failure is sticky for the delivery, so a flapping camera never flickers between bodies, and the
+swap mid-wait does not restart or complete the countdown, because the countdown lives above both
+bodies. A camera problem can only cost the user the picture, never the wait, so it can never be a
+way into the app. A DARK frame is not a failure and is never checked: a phone face down on a desk,
+or a dark room, is a working camera showing the truth.
+
+### Camera lifecycle: when it closes
+
+The camera owner drops below STARTED (and CameraX closes the camera) when the countdown reaches
+zero, when the user walks away (the activity pauses), when the redirect picker opens (`PauseWhile`
+caps the body at STARTED), when the activity stops, and when the body leaves composition (a new
+block token, a camera failure swapping to `DelayBody`, the overlay finishing). On dispose it calls
+`unbind(preview)`, never `unbindAll()`, so it can never touch a use case it did not bind.
+
+### Privacy
+
+The only use case bound is `Preview`. There is no `ImageCapture`, no `ImageAnalysis`, no
+`VideoCapture`; frames go from the camera to the screen's `PreviewView` surface and nowhere else.
+Nothing is recorded, saved, analysed or kept in memory, and Nudge has no INTERNET permission, so
+there is nowhere for a frame to go. MIRROR reuses the CAMERA permission the QR scanner already
+declares (`docs/architecture/qr.md`); it adds no permission and no dependency.
+
+### Permission in the editor
+
+Picking Mirror in any block-mode picker asks for the camera if it is not granted
+(`rememberMirrorCameraAccess`, `ui/components/rule/MirrorCameraAccess.kt`, using the QR scanner's
+`CameraPermissionFlow` to tell "denied" from "denied for good"). A denial keeps Mirror selected and
+shows one line under the picker: "Camera is off, so Mirror shows a countdown instead.", with "Allow
+camera" (or "Open settings" once Android stops asking). The permission is re-read on resume, so the
+line goes away after the user grants it in Settings.
+
+The block-mode picker became a row of chips (`BlockModePicker`, was `BlockModeSegmentedRow`): five
+segments do not fit "Breathing" at 360 dp.
+
+### Strict Mode
+
+`RuleWeakening` ranks MIRROR EQUAL to DELAY and HOLD: at one duration it is the same wait, so
+switching between them is not a weakening, while MIRROR to BREATHING or NONE is, and so is
+shortening a MIRROR rule's wait.
+
+**Device QA pending:** that the camera opens and closes on the edges above (`adb shell dumpsys
+media.camera`, "Active Camera Clients"), and that a camera held by another app shows the countdown.
+
+## Camera on block screens, an opt-in background (2026-11-10)
+
+One switch in Settings ("Show the camera on block screens", Personalize, default OFF,
+`NudgePreferences.cameraOnBlockScreens`, carried by export/import) draws the mirrored front camera
+as the full-bleed BACKGROUND of every block screen, with that screen's own message, info and exits on
+top. Only the picture changes. The screen's text, timers, exits, the passthrough path, the daily pass
+and Strict Mode are exactly the ones it has with the switch off.
+
+### Which screens get it
+
+`OverlayScreen.of(mode, nuke)` names the screen the activity's `when (mode)` renders, and
+`BlockBackdrop.wantsCamera` (`ui/overlay/BlockBackdrop.kt`, tested in `BlockBackdropTest`) says
+which of them try the camera:
+
+| Branch | Body | Camera | Why |
+|---|---|---|---|
+| HARD_BLOCK | `HardBlockContent` | yes | also the daily limit reached (`dailyTimeRemainingMs <= 0`) and a hard-block schedule window |
+| HARD_BLOCK + nuke | `NukeBlockContent` | yes | a block that keeps you out like any other |
+| DELAY | `DelayContent` | yes | also the kicked-out re-entry (the auto-kick cooldown is launched as DELAY, "Auto-kick cooldown"), the web cooldown and a delay schedule window |
+| HOLD | `HoldContent` | yes | every screen the overlay shows; the hold face keeps its own fill |
+| BREATHING | `BreathingContent` | yes | the circles are translucent containers and stay visible over the scrim |
+| MIRROR | `MirrorContent` | no | its body already IS the camera; a second backdrop would open it twice |
+| NONE | none | no | never rendered |
+
+Not block screens, so not covered: `PhoneNudgeActivity` (a pause, not a block), the Strict Mode
+guard, and `PipEscapeActivity`.
+
+### Shape
+
+`CameraBackdrop` (`ui/overlay/CameraBackdrop.kt`) wraps the whole `when (mode)` inside
+`key(blockToken)` and `PauseWhile`. With the setting off (or on MIRROR) it is a plain pass-through.
+With it on it draws an opaque black Surface, `FrontCameraPreview(open = true)`, and a uniform
+`CameraBackdropPalette.SCRIM` (black at 65%), then the body over it. Each body colours its own
+full-bleed Surface with `overlaySurfaceColor()`, which is the theme background as before, or clear
+only while the camera is drawn. The setting is read in `render`'s `runBlocking` with the other
+preferences, so the first frame is already the right one.
+
+The body is always composed through the same call, camera or not, so a camera failing mid-wait swaps
+the background and colours and nothing else: every `remember` in the body (countdown, hold,
+breathing clock) carries on.
+
+### Fallback and lifecycle
+
+`BlockBackdrop.backdropFor` reuses `MirrorFallback.bodyFor`: no permission, no front camera, or any
+camera failure (provider, bind, any `CameraState.error`) gives the PLAIN screen, sticky for the
+delivery. Never a bypass, because nothing about the screen's behaviour depends on the camera. The
+camera closes by the same rules as MIRROR: the activity pausing (Home, walk-away, a finish from
+`scheduleBlockEnd` at `endsAt`, any exit), the redirect picker (`PauseWhile` caps at STARTED), and
+the composable leaving (`unbind(preview)`, never `unbindAll`).
+
+### Legibility
+
+Over the camera the body is drawn in the dark theme with `cameraColorScheme`: every role drawn
+straight onto the background (onBackground, onSurface, onSurfaceVariant, outline, primary, error,
+tertiary) is a fixed colour that passes WCAG AA over the scrim on a pure white frame and a black one,
+and onPrimary passes on primary (`CameraBackdropContrastTest`). Containers keep the dark scheme's
+own fills. With the setting off nothing about the theme changes, which the Paparazzi gallery pins.
+
+### Permission and Strict Mode
+
+Turning the switch on asks for CAMERA through `rememberMirrorCameraAccess`; a denial keeps the switch
+on and shows "Camera is off, so block screens stay plain." with "Allow camera" / "Open settings".
+The switch is not a Strict Mode axis (like `bounceCheckInEnabled`): it changes no block's strength,
+so turning it either way, or importing it, is never a weakening (`ImportedSettingsWeakeningTest`).
+Shape pins: `CameraBackdropContractTest`.

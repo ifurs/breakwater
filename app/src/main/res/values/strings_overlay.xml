@@ -82,4 +82,6 @@
     <string name="overlay_rule_web">Web - %1$s</string>
     <string name="overlay_rule_content_filter">Restricted content</string>
     <string name="overlay_rule_nuke">Nuke</string>
+
+    <string name="overlay_mirror_still_want">Still want it?</string>
 </resources>

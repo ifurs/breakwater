@@ -29,6 +29,7 @@ class LeaveButtonContractTest {
         "DelayContent" to "LeaveButton(onClick = onCancel)",
         "HoldContent" to "LeaveButton(onClick = onCancel)",
         "BreathingContent" to "LeaveButton(onClick = onCancel)",
+        "MirrorContent" to "LeaveButton(onClick = onCancel)",
         "HardBlockContent" to "LeaveButton(text = stringResource(R.string.overlay_go_back), onClick = onGoBack)",
         "NukeBlockContent" to "LeaveButton(text = stringResource(R.string.overlay_go_home), onClick = onGoHome)"
     )
@@ -60,7 +61,9 @@ class LeaveButtonContractTest {
         mapOf(
             "DelayContent" to "CircularProgressIndicator(",
             "HoldContent" to "HoldTarget(",
-            "BreathingContent" to "LinearProgressIndicator("
+            "BreathingContent" to "LinearProgressIndicator(",
+            // The camera feed is the visual; the countdown number sits over it, above the exits.
+            "MirrorContent" to "FrontCameraPreview("
         ).forEach { (body, visual) ->
             val source = code(body)
             assertTrue(

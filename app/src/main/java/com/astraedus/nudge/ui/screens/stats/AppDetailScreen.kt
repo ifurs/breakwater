@@ -237,5 +237,6 @@ private fun formatBlockMode(mode: String): String = when (mode) {
     "DELAY" -> stringResource(R.string.components_block_mode_delay)
     "HOLD" -> stringResource(R.string.components_block_mode_hold)
     "BREATHING" -> stringResource(R.string.components_block_mode_breathing)
+    "MIRROR" -> stringResource(R.string.components_block_mode_mirror)
     else -> mode.lowercase().replaceFirstChar { it.uppercase() }
 }

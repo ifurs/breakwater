@@ -4,12 +4,15 @@
 # Replaces the 60–100 minute LLM tap-walk that gated every release with a deterministic run
 # that finishes in minutes, prints a PASS/FAIL table, and exits nonzero on any failure.
 #
-#   scripts/device-qa.sh            # every case (same as `all`), ~18 minutes
+#   scripts/device-qa.sh            # every case (same as `all`), ~30 minutes
 #   scripts/device-qa.sh all
 #   scripts/device-qa.sh delay-block
 #   scripts/device-qa.sh list
 #   scripts/device-qa.sh group1 && APK=installed scripts/device-qa.sh group2 \
-#     && APK=installed scripts/device-qa.sh group3    # `all` in three bounded chunks (below)
+#     && APK=installed scripts/device-qa.sh group3 \
+#     && APK=installed scripts/device-qa.sh group4 \
+#     && APK=installed scripts/device-qa.sh group5 \
+#     && APK=installed scripts/device-qa.sh group6    # `all` in six bounded chunks (below)
 #
 # ── WHY MOST OF THIS IS NOT MAESTRO (the central design fact) ─────────────────
 # Maestro — and every other UiAutomator-based driver — connects a `UiAutomation` session, and
@@ -55,39 +58,62 @@
 #                                    APK=debug ALLOW_CERT_SWITCH=1 scripts/device-qa.sh refusal-alert
 #                                    APK=main  ALLOW_CERT_SWITCH=1 scripts/device-qa.sh setup
 #
-# ── Running the gate in bounded chunks: group1 · group2 · group3 ──────────────
-# `all` takes ~18 minutes (setup 107s · delay-block 14s · home-reopen 140s · walkaway-count 55s ·
-# daily-limit-refresh 177s · daily-limit-midsession 258s · notif-idle 338s, plus ~45s of lock /
+# ── Running the gate in bounded chunks: group1 · group2 · group3 · group4 · group5 · group6 ─
+# `all` takes ~30 minutes (setup 107s · delay-block 14s · home-reopen 140s · walkaway-count 55s ·
+# daily-limit-refresh 177s · daily-limit-midsession 258s · notif-idle 338s, measured; the three
+# clock cases group-limit-midsession, schedule-start-open-app and schedule-end-overlay are each an
+# unmeasured ~3.5-4.5 min of real-clock waiting, and bounce-non-apps (#181) an unmeasured ~3-3.5 min
+# of two backup imports and a dozen app switches; plus ~45s of lock /
 # connect / install / grants per invocation), which no 10-minute foreground call can finish — and a
 # run cut off mid-way restores the bench but proves nothing. A group is a slice of `all` sized to
-# fit one such call (the longest, group2, is ~8 minutes). Membership: GROUP*_CASES below, and
-# `--help` prints it.
+# fit one such call (the longest, group3 with bounce-non-apps, is an estimated ~8.75 minutes, the
+# first number to re-measure). Membership: GROUP*_CASES below, and `--help` prints it.
 #
 #   scripts/device-qa.sh group1
 #   APK=installed scripts/device-qa.sh group2
 #   APK=installed scripts/device-qa.sh group3
+#   APK=installed scripts/device-qa.sh group4
+#   APK=installed scripts/device-qa.sh group5
+#   APK=installed scripts/device-qa.sh group6   # nuke-profiles + nuke-timer, ~5 min (see below)
 #
-# Run them IN THAT ORDER: group1 carries `setup`, which every later case assumes. Give group2 and
-# group3 APK=installed so the series tests the ONE build group1 put on the bench (APK=main would
+# Run them IN THAT ORDER: group1 carries `setup`, which every later case assumes. Give every later
+# group APK=installed so the series tests the ONE build group1 put on the bench (APK=main would
 # re-download whatever main-latest has become and reinstall it between chunks). The series passes
-# only if all three exit 0. No case asserts anything different from `all`:
+# only if all six exit 0. group3 (#146, plus #181's bounce-non-apps) and group4 (#169/#170) are the
+# clock chunks, added when group2 had no room left; group5 is the old group3 unchanged, so `crash-check` still runs last. No case
+# asserts anything different from `all`:
 #   · `crash-check` still means "no app crash since the SERIES started". group1 records the
-#     dropbox count in ~/.cache/nudge-qa/crash-baseline and group2/group3 reuse it (when it is under
-#     3h old; otherwise they warn and take a fresh one) instead of re-baselining — a per-chunk
-#     baseline would let a crash during group1 pass a crash-check that only watches group3.
+#     dropbox count in ~/.cache/nudge-qa/crash-baseline and every later group reuses it (when it is
+#     under 3h old; otherwise they warn and take a fresh one) instead of re-baselining — a per-chunk
+#     baseline would let a crash during group1 pass a crash-check that only watches group5.
 #   · like `all`, a group skips the ~40s restore of the 1-minute Calculator limit after the
 #     daily-limit cases (the next `setup` re-imports it), so a lone group2 leaves the limit wherever
 #     the last case ended.
-#   · the three groups are asserted at startup to concatenate to ALL_CASES, so a case added to
+#   · the six groups are asserted at startup to concatenate to ALL_CASES, so a case added to
 #     `all` cannot silently drop out of the chunked gate.
 #
 # ── Other knobs ───────────────────────────────────────────────────────────────
 #   ADB_SERIAL=192.168.1.68:5555   bench Pixel 3 (auto-reconnects)
+#   NUKE_TIMER_WAIT=1              nuke-timer (group6) also waits out the real 15-minute timer and scans the
+#                                  key to end Nuke. OPT-IN: it cannot fit one 10-minute chunk, so run
+#                                  `NUKE_TIMER_WAIT=1 APK=installed scripts/device-qa.sh nuke-timer` on its own.
+#   NUKE_APP_A_PKG/_LABEL, NUKE_APP_B_PKG/_LABEL   the two ordinary apps group6 ticks (default Keep notes
+#                                  and Calendar; the label is what the Nuke list shows)
+#   NUKE_QA_KEY=qa-nuke-key-183    payload group6 pairs and scans via debug.nudge.fakescan
 #   NOTIF_IDLE_SECS=300            idle window for the notif-idle case (#63)
 #   HOME_REOPEN_TRIALS=5           repeats inside the home-reopen case (#58)
 #   LIMIT_BURN_SECS=70             foreground time spent exhausting the 1-minute daily limit
 #   LIMIT_WAIT_SECS=45             how long to wait, after re-entry, for the limit to fire
 #   MIDSESSION_WAIT_SECS=240       ceiling on the mid-session sit (the case derives its own wait)
+#   BOUNDARY_PKG=com.google.android.keep   the ordinary app the schedule-boundary cases (#169, #170)
+#                                  put a Hard block on. NOT Calculator: its 1-minute daily limit is
+#                                  spent by then, which would block it for the wrong reason. NOT
+#                                  Contacts either: group-limit-midsession puts a limit on it.
+#   BOUNDARY_LEAD_MIN=3            minutes between seeding and the schedule STARTING (the import
+#                                  through the UI takes ~40s of that)
+#   BOUNDARY_WAIT_SLACK_SECS=90    how long past the real boundary the cases wait for the app to react
+#   BOUNCE_APP_CANDIDATES="<pkg> …" the ordinary apps bounce-non-apps (#181) may bounce through; it
+#                                  takes the first three that are installed, launchable and ruleless
 #   QA_LOCK_OWNER=<name>           reuse a Pixel lock the caller already holds. ONLY works when
 #                                  this script runs in the caller's own process tree:
 #                                  `device-lock.sh` keys a holder on owner AND pid, and under
@@ -105,6 +131,18 @@
 #   accessibility_enabled · SYSTEM_ALERT_WINDOW + GET_USAGE_STATS appops ·
 #   the shared Pixel device lock (only if this run acquired it) · logcat + sampler pids.
 #
+# ── group6: Nuke profiles + timer (DEBUG build for the scan steps) ─────────────
+#   nuke-profiles  save two profiles, switch between them (any build); on a DEBUG build also pair a key
+#                  with `setprop debug.nudge.fakescan`, Nuke now, delete the selected profile while Nuke
+#                  is on, and check the app only in that profile is still blocked.
+#   nuke-timer     the timer dropdown lists six options (any build); on a DEBUG build also start a
+#                  15-minute timer and check scanning the key is refused while it runs.
+#   On the release-signed APK the scan steps are SKIPPED with the reason (status SKIP, exit stays 0),
+#   never failed: BuildConfig.DEBUG is false there so the property does nothing. The property is
+#   cleared on every exit. nuke-timer leaves Nuke ON for the rest of its 15 minutes unless the build
+#   is a `qa` build (then it ends via the `reset` command: that also clears rules/groups/history); on a
+#   plain debug build the operator ends it by scanning the key after the timer (or NUKE_TIMER_WAIT=1).
+#
 # Everything is idempotent and re-runnable: `setup` starts from `pm clear`, so no case
 # depends on state a previous run left behind.
 
@@ -120,6 +158,21 @@ WATCHDOG_ACTION="${APP_ID}.debug.RUN_WATCHDOG"
 LAUNCHER_PKG="com.google.android.apps.nexuslauncher"
 YOUTUBE_PKG="com.google.android.youtube"
 LIMIT_PKG="com.google.android.calculator"
+# `group-limit-midsession` (#146): the member app of the group it creates through the UI. It must be
+# an app with NO direct rule in `.maestro/fixtures/rules.json` (that file has direct rules on
+# YouTube and Calculator only), so the only thing that can give it a daily clock is the GROUP rule;
+# a package with its own rule would pass this case on the direct-rule path the app already had
+# (test-device-qa.sh greps the fixture for this package so a later fixture edit fails the harness).
+# Contacts, NOT the stock Clock: the bench's Nudge app picker does not list com.google.android.deskclock
+# at all (searching "lock" matches nothing, 2026-11-08), so the case could not add it to the group.
+# Contacts is installed, listed, and has no rule of its own. The launcher label is what the group
+# picker's list shows, so package and label are config rather than literals.
+GROUP_LIMIT_PKG="${GROUP_LIMIT_PKG:-com.google.android.contacts}"
+GROUP_LIMIT_LABEL="${GROUP_LIMIT_LABEL:-Contacts}"
+# The throwaway group's name. A fixed name is what lets a run find and delete the group an aborted
+# run left behind. The row Manage Apps draws for it reads "<name> · 1 app" (RuleSummary.groupTitle).
+QA_GROUP_NAME="${QA_GROUP_NAME:-QA group 146}"
+QA_GROUP_TITLE="${QA_GROUP_NAME} · 1 app"
 
 ADB_SERIAL="${ADB_SERIAL:-192.168.1.68:5555}"
 APK="${APK:-main}"
@@ -137,6 +190,15 @@ LIMIT_WAIT_SECS="${LIMIT_WAIT_SECS:-45}"
 # Ceiling on the mid-session sit. The case computes its own wait from the budget it actually has
 # left plus one 30-second clock tick; this only stops a mis-derived limit from parking the run.
 MIDSESSION_WAIT_SECS="${MIDSESSION_WAIT_SECS:-240}"
+# Google Keep: on the bench (its captures are in docs/architecture/accessibility-event-pipeline.md)
+# and carrying no fixture rule. The case fails loud if it is missing, never skips.
+BOUNDARY_PKG="${BOUNDARY_PKG:-com.google.android.keep}"
+BOUNDARY_LEAD_MIN="${BOUNDARY_LEAD_MIN:-3}"
+BOUNDARY_WAIT_SLACK_SECS="${BOUNDARY_WAIT_SLACK_SECS:-90}"
+# bounce-non-apps (#181): ordinary stock Google apps, in preference order. The case takes the first
+# BOUNCE_REAL_APPS of them that are installed, have a launcher entry ON THE DEVICE and carry no rule
+# (and are none of the packages other cases own), so a missing one is skipped rather than fatal.
+BOUNCE_APP_CANDIDATES="${BOUNCE_APP_CANDIDATES:-com.google.android.calendar com.google.android.apps.photos com.google.android.apps.maps com.google.android.gm com.google.android.apps.messaging com.android.vending com.google.android.dialer}"
 MAESTRO_BIN="${MAESTRO_BIN:-${HOME}/.maestro/bin/maestro}"
 GH_REPO="${GH_REPO:-astraedus/nudge}"
 
@@ -152,6 +214,13 @@ WORK="$(mktemp -d "${QA_CACHE_DIR}/run-${RUN_TS}-XXXX")"
 LOGCAT_FILE="${WORK}/logcat.txt"
 SAMPLER_FILE="${WORK}/load.txt"
 FIXTURE_DEVICE_PATH="/sdcard/Download/nudge-qa-rules.json"
+# The schedule-boundary cases write their own rule file at run time (the minutes depend on the
+# clock), under a name of its own so the picker cannot offer `setup`'s fixture instead.
+BOUNDARY_FIXTURE_DEVICE_PATH="/sdcard/Download/nudge-qa-boundary.json"
+# Device epoch at which the LAST boundary rule seeded on the bench stops covering its app. The import
+# MERGES and nothing here deletes a rule, so each boundary case waits for this before seeding its own
+# (case independence); it is a file, not a variable, so back-to-back single-case runs agree too.
+BOUNDARY_LAST_END_FILE="${QA_CACHE_DIR}/boundary-last-end-epoch"
 
 export PATH="${HOME}/.maestro/bin:${PATH}"
 export MAESTRO_CLI_NO_ANALYTICS=true
@@ -165,18 +234,32 @@ ALL_CASES=(
   walkaway-count
   daily-limit-refresh
   daily-limit-midsession
+  group-limit-midsession
+  bounce-non-apps
+  schedule-start-open-app
+  schedule-end-overlay
   notif-idle
   crash-check
   refusal-alert
+  nuke-profiles
+  nuke-timer
 )
 
 # The chunked gate (header: "Running the gate in bounded chunks"): `all`, cut so each slice fits one
 # 10-minute call. Explicit lists, not index slices of ALL_CASES, so that adding a case forces a
-# decision about which chunk has the time for it; check_groups() fails the run when the three stop
-# concatenating to ALL_CASES.
+# decision about which chunk has the time for it; check_groups() fails the run when the six stop
+# concatenating to ALL_CASES. The schedule-boundary cases wait on the REAL clock for a minute
+# boundary (~3.5-4 min each, plus up to ~1 min for schedule-end-overlay to wait out schedule-start-open-app's
+# 1-minute window, so group4 stays under ~10 min), so they get a chunk of their own: group-limit-midsession (~4.5 min)
+# and the two of them would not fit one call. bounce-non-apps (#181, ~3-3.5 min) shares group3 with
+# group-limit-midsession: group5 already holds notif-idle's 338s, and group3 had the most room.
 GROUP1_CASES=(setup delay-block home-reopen walkaway-count)
 GROUP2_CASES=(daily-limit-refresh daily-limit-midsession)
-GROUP3_CASES=(notif-idle crash-check refusal-alert)
+GROUP3_CASES=(group-limit-midsession bounce-non-apps)
+GROUP4_CASES=(schedule-start-open-app schedule-end-overlay)
+GROUP5_CASES=(notif-idle crash-check refusal-alert)
+# group6 (Nuke profiles + timer, ~5 min): appended after the other five so none of their lists or timings move.
+GROUP6_CASES=(nuke-profiles nuke-timer)
 
 # ─── Output helpers ───────────────────────────────────────────────────────────
 info() { printf '[qa] %s\n' "$*"; }
@@ -227,6 +310,10 @@ cleanup() {
   local code=$?
   stop_logcat
   [[ -n "$SAMPLER_PID" ]] && kill "$SAMPLER_PID" 2>/dev/null
+  # group6: never leave the debug scan override set on the bench, even on an interrupted run.
+  if [[ "${NUKE_FAKESCAN_SET:-0}" -eq 1 ]]; then
+    adb -s "$ADB_SERIAL" shell setprop debug.nudge.fakescan "''" >/dev/null 2>&1
+  fi
   if [[ "$STATE_SAVED" -eq 1 ]]; then
     info "Restoring device state …"
     ash svc power stayon false >/dev/null 2>&1
@@ -344,7 +431,7 @@ screen_is_usable() {
 
 # Wake the phone, dismiss the keyguard, and hold both. Returns 1 if it could not.
 #
-# The PIN is known (1337) and lives in `~/bin/astra-pixel-unlock.sh` — the lock screen is never a
+# The PIN lives in `~/bin/astra-pixel-unlock.sh` (private, never commit it) — the lock screen is never a
 # reason to stop and wait for a human. Two attempts, because the helper's own wake can race a
 # device that is mid-doze.
 wake_and_unlock() {
@@ -1023,28 +1110,54 @@ nudge_notif_records() { # prints "<count> <mUpdateTimeMs of id=1>"
   local d count upd
   d="$(ash dumpsys notification --noredact 2>/dev/null | tr -d '\r')"
   count="$(grep -c "NotificationRecord.*pkg=${APP_ID} " <<<"$d")"
-  upd="$(awk -v pkg="$APP_ID" '
-      /NotificationRecord\(/ { want = ($0 ~ ("pkg=" pkg " user=[^ ]* id=1 ")) }
-      want && /mUpdateTimeMs=/ { sub(/.*mUpdateTimeMs=/, ""); print $1; exit }
-    ' <<<"$d")"
+  upd="$(notif_update_ms_in "$d" 1)"
   echo "${count:-0} ${upd:-0}"
+}
+
+# mUpdateTimeMs of Nudge's notification <id> in a `dumpsys notification --noredact` text, or nothing.
+# One parser for every id (see nudge_notif_records for why the header's own id decides, and why
+# `id=1 ` keeps its trailing space: id=10 / id=11 are not id=1).
+notif_update_ms_in() { # <dump text> <id>
+  awk -v pkg="$APP_ID" -v id="$2" '
+      /NotificationRecord\(/ { want = ($0 ~ ("pkg=" pkg " user=[^ ]* id=" id " ")) }
+      want && /mUpdateTimeMs=/ { sub(/.*mUpdateTimeMs=/, ""); print $1; exit }
+    ' <<<"$1"
+}
+
+nudge_notif_update_ms() { # <id> -> its mUpdateTimeMs, 0 when Nudge has no such notification
+  local d upd
+  d="$(ash dumpsys notification --noredact 2>/dev/null | tr -d '\r')"
+  upd="$(notif_update_ms_in "$d" "$1")"
+  echo "${upd:-0}"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CASES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-push_fixture() {
-  adbs push "${REPO_ROOT}/.maestro/fixtures/rules.json" "$FIXTURE_DEVICE_PATH" >/dev/null 2>&1 ||
-    { fail "could not push the rule fixture to the device"; return 1; }
+# Pushes <local file> to <device path> in /sdcard/Download so Nudge's Import-backup picker lists it
+# FIRST. The picker sorts newest-first and `adb push` keeps the LOCAL mtime, so the committed
+# fixture (mtime = whenever it was checked out) sank below the fold behind the other Download files
+# and `setup` failed three nights running. Touching the DEVICE copy to "now" fixes the ordering at
+# its source without moving or deleting anything else in Download. The path is one quoted string
+# for the device shell (see device_clock).
+push_to_download() { # local_file device_path
+  adbs push "$1" "$2" >/dev/null 2>&1 || return 1
+  ash "touch '$2'" >/dev/null 2>&1
   ash am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
-    -d "file://${FIXTURE_DEVICE_PATH}" >/dev/null 2>&1
+    -d "file://$2" >/dev/null 2>&1
+}
+
+push_fixture() {
+  push_to_download "${REPO_ROOT}/.maestro/fixtures/rules.json" "$FIXTURE_DEVICE_PATH" ||
+    { fail "could not push the rule fixture to the device"; return 1; }
   info "fixture pushed: ${FIXTURE_DEVICE_PATH}"
 }
 
 case_setup() {
   push_fixture || return 1
   info "pm clear — every case starts from a first-run install."
+  rm -f "$BOUNDARY_LAST_END_FILE"  # pm clear drops the boundary rules the record describes
   ash pm clear "$APP_ID" >/dev/null 2>&1
   sleep 2
   # `pm clear` RAISES THE KEYGUARD, and it does it with the screen still on, so nothing downstream
@@ -1427,16 +1540,25 @@ set_daily_limit_minutes() { # minutes
   # in. "2h" is always there; a preset is a draft until "Save", and the dialog below overwrites it.
   ui_tap_text "2h" 8 || return 1
   ui_tap_text "Custom" 8 || return 1
-  ui_wait_text "Custom Daily Limit" 8 || return 1
+  type_custom_minutes "Custom Daily Limit" "$minutes" || return 1
+  ui_tap_text "Save" 8 || return 1
+  sleep 2
+  info "Calculator daily limit set to ${minutes}m."
+}
+
+# The "Custom ..." minutes dialog (CustomTimeDialog), once it has been opened: waits for its title,
+# replaces the pre-filled value and confirms with "Set". App config titles it "Custom Daily Limit"
+# and the group editor "Custom daily limit" (different call sites of the same shared dialog), so the
+# title is a parameter; the rest of the flow is one thing to re-find when that dialog moves.
+type_custom_minutes() { # dialog-title minutes
+  local title="$1" minutes="$2" i
+  ui_wait_text "$title" 8 || return 1
   # The field is pre-filled with the current value, so clear it before typing.
   ui_tap_text "Value (minutes)" 5 || true
   for ((i = 0; i < 6; i++)); do ash input keyevent KEYCODE_DEL >/dev/null 2>&1; done
   ash input text "$minutes" >/dev/null 2>&1
   sleep 1
-  ui_tap_text "Set" 8 || return 1
-  ui_tap_text "Save" 8 || return 1
-  sleep 2
-  info "Calculator daily limit set to ${minutes}m."
+  ui_tap_text "Set" 8
 }
 
 restore_daily_limit() { set_daily_limit_minutes 1; }
@@ -1448,10 +1570,16 @@ restore_daily_limit() { set_daily_limit_minutes 1; }
 # the limit, and that is a `queryEvents` pairing walk through `ScreenTimeProvider`. Reading a
 # different source would derive a limit the app does not agree with, which is the fixture-honesty
 # rule one layer out.
-calculator_daily_usage_ms() {
-  grep -o "evaluate package=${LIMIT_PKG} rules=[0-9]* dailyUsageMs=[0-9]*" "$LOGCAT_FILE" 2>/dev/null |
+#
+# The package is matched up to the space after `package=<pkg>` so `com.google.android.calculator`
+# can never pick up a longer name that merely starts with it. The LAST line wins: usage only grows
+# during a case, and the newest evaluation is the one the clock compares against.
+daily_usage_ms() { # package
+  grep -o "evaluate package=${1} rules=[0-9]* dailyUsageMs=[0-9]*" "$LOGCAT_FILE" 2>/dev/null |
     grep -o 'dailyUsageMs=[0-9]*' | tail -1 | cut -d= -f2
 }
+
+calculator_daily_usage_ms() { daily_usage_ms "$LIMIT_PKG"; }
 
 # ── daily-limit-midsession (v1.18.4): the budget blocks while you are still IN the app ──
 #
@@ -1670,6 +1798,722 @@ case_daily_limit_midsession() {
   return $rc
 }
 
+# ── group-limit-midsession (#146): a GROUP's daily limit blocks while you are still in the app ──
+#
+# Same subject as `daily-limit-midsession`, other rule shape. Until #146 the 30-second foreground
+# clock only ran for a DIRECT rule on the app; a GROUP's daily limit was read once, at app open, so
+# you could sit in a group member past the group's budget forever (bench repro: a Hard group, 3
+# apps). The fix made the clock follow whatever rule covers the package, which is the thing this
+# case proves on the device: a clock fires `daily_limit_reached` for an app that has NO rule of its
+# own and is limited only through its group.
+#
+# ## Why the group is built through the UI, not the fixture
+# `.maestro/fixtures/rules.json` is shared with Maestro's setup flow and with qa-driver; a group
+# there would put a limit on the member app for every other case and every other harness. A group
+# made here exists for this case only and is deleted on EVERY exit path (see `delete_qa_group`).
+# Driving the real editor also covers the half of #146 the unit tests cannot: that the editor writes
+# a group rule the engine reads back with its limit.
+#
+# ## Why the limit is set in a SECOND step, after measuring
+# Same reason as `daily-limit-midsession` plus one: the engine logs `dailyUsageMs` only when a
+# covering rule HAS a limit. So the group is created with a limit that cannot trip (the 2h preset),
+# the member is launched once to make the engine report today's usage, and only then does the group
+# get `usage + 2` minutes through the custom dialog. The 2h preset keeps the first save a plain chip
+# tap; the second save is the same custom-dialog flow `set_daily_limit_minutes` uses.
+#
+# ## The budget is PER APP
+# The editor's switch reads "Daily limit for each app": every member has its own budget, compared
+# against that member's OWN foreground total, not a pooled one. So the usage measured here is the
+# member's, and the group's other members (there are none) would not matter.
+#
+# ## The central constraint, again
+# NO `uiautomator dump` while the member is in front: a dump tears down the accessibility service
+# and with it the clock under test (the long comment in `daily-limit-midsession`, step 4). Every UI
+# interaction below happens in Nudge's own screens, BEFORE the member is entered or AFTER the block.
+
+# Taps the first text field on screen. The group editor has exactly one (Name), and its label is a
+# separate Compose node whose uiautomator text is not guaranteed, so the field is found by CLASS;
+# the label text is the fallback. Compose text fields report `android.widget.EditText`.
+ui_tap_edittext() { # [timeout_secs]
+  local timeout="${1:-10}" xy i
+  for ((i = 0; i < timeout; i++)); do
+    ui_snapshot
+    xy="$(python3 - "$UI_XML" <<'PYEOF'
+import re
+import sys
+
+xml = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+for attrs in re.findall(r"<node([^>]*)>", xml):
+    if 'class="android.widget.EditText"' not in attrs:
+        continue
+    b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]', attrs)
+    if b:
+        x1, y1, x2, y2 = (int(g) for g in b.groups())
+        print((x1 + x2) // 2, (y1 + y2) // 2)
+        break
+PYEOF
+)"
+    if [[ -n "$xy" ]]; then
+      # shellcheck disable=SC2086
+      ash input tap $xy >/dev/null 2>&1
+      sleep 1
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+# Taps the SWITCH on the row labelled $1. The group editor's `LabelledSwitch` is a Row whose label
+# is plain text and whose Switch has no text, so `ui_tap_text` cannot reach it (and tapping the
+# label does nothing). The label gives the row's y; the switch sits at the right edge, 16dp in from
+# the screen edge and 52dp wide, i.e. its centre is ~110px in from the right on every density the
+# bench uses. The screen width is read from `wm size` rather than assumed.
+ui_tap_switch_of() { # label [timeout_secs]
+  local needle="$1" timeout="${2:-10}" xy w i
+  w="$(ash wm size 2>/dev/null | tr -d '\r' | grep -o '[0-9]\+x[0-9]\+' | tail -1 | cut -dx -f1)"
+  w="${w:-1080}"
+  for ((i = 0; i < timeout; i++)); do
+    ui_snapshot
+    xy="$(python3 "${WORK}/locate.py" "$UI_XML" "$needle")"
+    if [[ -n "$xy" ]]; then
+      ash input tap $(( w - 110 )) "${xy#* }" >/dev/null 2>&1
+      sleep 1
+      return 0
+    fi
+    sleep 1
+  done
+  fail "cannot tap the switch on '${needle}': not on screen within ${timeout}s"
+  return 1
+}
+
+# Opens the QA group's editor from Manage Apps. Returns 0 with the editor open, 2 when there is no
+# such group (not an error: the caller decides), 1 when navigation itself failed.
+#
+# Found by SEARCH, not by scrolling: a bench with many groups would push it off screen, and the
+# search filters groups by name. The search text is typed with `%s` for spaces (`input text` has no
+# other way to type one).
+qa_group_open() {
+  open_manage_apps || return 1
+  ui_tap_text "Search apps and groups" 10 || return 1
+  ash input text "${QA_GROUP_NAME// /%s}" >/dev/null 2>&1
+  sleep 2
+  ash input keyevent KEYCODE_BACK >/dev/null 2>&1
+  sleep 1
+  ui_wait_text "$QA_GROUP_TITLE" 5 || return 2
+  ui_tap_text "$QA_GROUP_TITLE" 5 || return 1
+  ui_wait_text "Save" 8 || return 1
+}
+
+# Creates the QA group: Hard block, the member app, and a daily limit that cannot trip (2h).
+#
+# Hard block is the mode of the bench repro. It is also the mode with the LEAST in the way: a Hard
+# rule WITH a daily limit blocks only once the limit is spent (BlockEngine line ~104), so launching
+# the member to measure is not itself blocked, while a Delay group would put a 15 s overlay in front
+# of every launch below.
+qa_group_create() {
+  open_manage_apps || return 1
+  ui_tap_text "Block several apps" 10 || return 1
+  ui_tap_text "A group of apps" 10 || return 1
+  ui_wait_text "New group" 8 || { fail "the new-group editor did not open"; return 1; }
+
+  ui_tap_edittext 8 || ui_tap_text "Name" 8 || return 1
+  ash input text "${QA_GROUP_NAME// /%s}" >/dev/null 2>&1
+  sleep 1
+  ash input keyevent KEYCODE_BACK >/dev/null 2>&1   # the keyboard only; the editor is still dirty
+  sleep 1
+  ui_snapshot
+  ui_has "$QA_GROUP_NAME" || { fail "the group name did not land in the Name field"; return 1; }
+
+  ui_tap_text "Add apps" 8 || return 1
+  ui_wait_text "Search apps" 8 || return 1
+  ui_tap_text "Search apps" 8 || return 1
+  # One character short of the label on purpose. The picker's list is filtered by CONTAINS, and the
+  # typed query is itself a node whose text is what was typed: with the full label the exact-text
+  # locator would find the search field first and "select the app" by tapping the field.
+  ash input text "${GROUP_LIMIT_LABEL%?}" >/dev/null 2>&1
+  sleep 2
+  ash input keyevent KEYCODE_BACK >/dev/null 2>&1
+  sleep 1
+  ui_tap_text "$GROUP_LIMIT_LABEL" 8 || return 1
+  ui_wait_text "1 selected" 5 || { fail "the picker did not register ${GROUP_LIMIT_LABEL} as selected"; return 1; }
+  ui_tap_text "Done" 8 || return 1
+
+  scroll_to_text "Hard" 8 || { fail "no 'Hard' mode segment — is 'Block these apps' on?"; return 1; }
+  ui_tap_text "Hard" 8 || return 1
+  scroll_to_text "Daily limit for each app" 8 || return 1
+  ui_tap_switch_of "Daily limit for each app" 8 || return 1
+  ui_wait_text "2h" 5 || { fail "the daily limit chips did not appear after switching 'Daily limit for each app' on"; return 1; }
+  ui_tap_text "2h" 8 || return 1
+  ui_tap_text "Save" 8 || return 1
+  ui_wait_text "$QA_GROUP_TITLE" 10 || { fail "saved, but '${QA_GROUP_TITLE}' is not listed on Manage Apps"; return 1; }
+  info "QA group '${QA_GROUP_NAME}' created: ${GROUP_LIMIT_LABEL}, Hard block, 2h daily limit."
+}
+
+# Sets the QA group's daily limit to $1 minutes. Same custom-dialog flow as
+# `set_daily_limit_minutes`, including the "tap 2h first" step: the fifth chip reads "Custom" only
+# while the limit is one of the presets, so a leftover custom limit would otherwise hide it.
+qa_group_set_limit() { # minutes
+  local minutes="$1"
+  qa_group_open || return 1
+  scroll_to_text "Daily limit for each app" 8 || return 1
+  ash input swipe 540 1500 540 1100 300 >/dev/null 2>&1   # bring the chips above the fold
+  sleep 1
+  ui_tap_text "2h" 8 || return 1
+  ui_tap_text "Custom" 8 || return 1
+  type_custom_minutes "Custom daily limit" "$minutes" || return 1
+  ui_tap_text "Save" 8 || return 1
+  ui_wait_text "$QA_GROUP_TITLE" 10 || { fail "saved, but '${QA_GROUP_TITLE}' is not listed on Manage Apps"; return 1; }
+  info "QA group daily limit set to ${minutes}m."
+}
+
+# Deletes the QA group through its editor ("Delete group" -> "Delete"). Idempotent: no such group is
+# a no-op (info when $1 is "pre", the up-front sweep for an aborted run's leftover; a warning when it
+# is the final cleanup, because then the group should have existed). Returns 1 only when the group
+# IS there and could not be deleted, which the caller must report: a group left on the bench puts a
+# daily limit on ${GROUP_LIMIT_LABEL} (Contacts by default) for every later case run alone.
+delete_qa_group() { # [pre]
+  local when="${1:-}" rc=0
+  qa_group_open || rc=$?
+  if (( rc == 2 )); then
+    if [[ "$when" == "pre" ]]; then
+      info "no leftover '${QA_GROUP_NAME}' on the bench"
+    else
+      warn "cleanup found no '${QA_GROUP_NAME}' to delete (it was never created, or already gone)"
+    fi
+    return 0
+  fi
+  if (( rc != 0 )); then
+    warn "could not open '${QA_GROUP_NAME}' to delete it — check Manage Apps for a leftover group"
+    return 1
+  fi
+  scroll_to_text "Delete group" 10 || { warn "no 'Delete group' button in the editor"; return 1; }
+  ui_tap_text "Delete group" 8 || return 1
+  ui_tap_text "Delete" 8 || return 1
+  sleep 2
+  info "QA group '${QA_GROUP_NAME}' deleted."
+}
+
+# The case = body + cleanup. The cleanup must run after EVERY exit of the body, and the body has a
+# dozen early returns once the group exists, so it is a separate function rather than a trap or a
+# copy of the cleanup at each `return`.
+case_group_limit_midsession() {
+  local rc=0
+  delete_qa_group pre || warn "a leftover QA group may still be on the bench"
+  group_limit_midsession_body || rc=$?
+  stop_logcat
+  delete_qa_group || { fail "the QA group could not be deleted — remove '${QA_GROUP_NAME}' by hand before running anything else"; rc=1; }
+  return $rc
+}
+
+group_limit_midsession_body() {
+  local rc=0 i
+  local clock_re="block package=${GROUP_LIMIT_PKG} reason=daily_limit_reached .*source=foreground_clock"
+
+  # 1. Create the group (member + a limit that cannot trip), through the real editor.
+  qa_group_create || { fail "could not create the QA group through the editor"; return 1; }
+
+  # 2. Measure. One launch makes the engine log today's total for the member, because a covering
+  #    rule with a limit now exists. Fresh logcat first so no earlier line can be mistaken for it.
+  go_home
+  start_logcat
+  ash am force-stop "$GROUP_LIMIT_PKG" >/dev/null 2>&1
+  sleep 1
+  ash monkey -p "$GROUP_LIMIT_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  local usage_ms=""
+  for ((i = 0; i < 20; i++)); do
+    usage_ms="$(daily_usage_ms "$GROUP_LIMIT_PKG")"
+    [[ -n "$usage_ms" ]] && break
+    sleep 1
+  done
+  if [[ -z "$usage_ms" ]]; then
+    fail "no 'evaluate package=${GROUP_LIMIT_PKG} … dailyUsageMs=' line — is debug logging on (run 'setup'), and did the group's limit save?"
+    return 1
+  fi
+  info "Android has recorded ${usage_ms}ms of ${GROUP_LIMIT_LABEL} today"
+
+  # 3. Derive and set: usage + 2 whole minutes, so entry has 60-120s of real budget left. The 2h
+  #    preset the group was created with is the ceiling: past it the group would already be tripping.
+  local limit_min=$(( usage_ms / 60000 + 2 ))
+  if (( limit_min >= 120 )); then
+    fail "${GROUP_LIMIT_LABEL} has already run ${usage_ms}ms today — a derived limit of ${limit_min}m is not below the 2h the group started with"
+    return 1
+  fi
+  qa_group_set_limit "$limit_min" || { fail "could not set the derived ${limit_min}m group limit"; return 1; }
+
+  # 4. Baseline the Blocked count BEFORE entering (reading the dashboard later means leaving the app).
+  nudge_route_home
+  local before b_before w_before
+  before="$(read_blocked_counts)" || { fail "could not read the week summary on the dashboard"; return 1; }
+  b_before="${before% *}"; w_before="${before#* }"
+  info "before: blocked=${b_before} walkedAway=${w_before}"
+
+  # 5. Open the member fresh, with budget left. A fresh logcat so the lines counted below cannot be
+  #    leftovers from the measurement launch. The 12 s is the counter cache TTL (see the same wait in
+  #    `daily-limit-midsession`): the clock reads the LIMIT out of a 10-second snapshot, and for a
+  #    group that snapshot also carries the group rule just saved.
+  go_home
+  ash am force-stop "$GROUP_LIMIT_PKG" >/dev/null 2>&1
+  sleep 12
+  start_logcat
+  ash monkey -p "$GROUP_LIMIT_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  wait_fg "$GROUP_LIMIT_PKG" 15 || { fail "${GROUP_LIMIT_PKG} did not come to the foreground"; return 1; }
+  sleep 3
+  shot 54-group-member-fresh-budget
+  # NOT `ui_snapshot` from here until the block lands: see "The central constraint" above.
+  local fg_now
+  fg_now="$(foreground_package)"
+  if [[ "$fg_now" != "$GROUP_LIMIT_PKG" ]]; then
+    fail "expected to be sitting in ${GROUP_LIMIT_PKG} at entry, but '${fg_now}' is in front — a Hard block on entry means the group blocked it outright"
+    return 1
+  fi
+  if (( $(log_count_re "$clock_re") > 0 )) || (( $(log_count "block package=${GROUP_LIMIT_PKG} reason=daily_limit_reached") > 0 )); then
+    fail "entered with the limit already tripped (usage=${usage_ms}ms, derived limit=${limit_min}m) — this case needs budget REMAINING at entry"
+    return 1
+  fi
+
+  local entry_usage remaining_s wait_s
+  entry_usage="$(daily_usage_ms "$GROUP_LIMIT_PKG")"
+  entry_usage="${entry_usage:-$usage_ms}"
+  remaining_s=$(( (limit_min * 60000 - entry_usage) / 1000 ))
+  (( remaining_s < 0 )) && remaining_s=0
+  wait_s=$(( remaining_s + 45 ))
+  (( wait_s > MIDSESSION_WAIT_SECS )) && wait_s="$MIDSESSION_WAIT_SECS"
+  info "entered with ${remaining_s}s of budget left; waiting up to ${wait_s}s WITHOUT leaving the app"
+
+  # 6. Sit still. No taps, no swipes, no UI dumps — the only thing that may happen is the clock.
+  local limited=0 left_the_app="" fg
+  for ((i = 0; i < wait_s; i += 5)); do
+    if (( $(log_count_re "$clock_re") > 0 )); then
+      limited=1
+      info "the group budget ran out after ~${i}s of sitting still"
+      break
+    fi
+    fg="$(foreground_package)"
+    [[ "$fg" == "$LAUNCHER_PKG" ]] && left_the_app="$fg"
+    sleep 5
+  done
+
+  if [[ -n "$left_the_app" ]]; then
+    fail "the app was left during the sit (saw '${left_the_app}' in front) — this case only proves anything while we stay inside"
+    rc=1
+  fi
+  if (( limited == 0 )); then
+    fail "sat ${wait_s}s inside ${GROUP_LIMIT_PKG} with a ${limit_min}m GROUP budget and the limit never fired mid-session"
+    grep -E "evaluate package=${GROUP_LIMIT_PKG}|clock (started|stopped|exited)|daily_limit_reached" \
+      "$LOGCAT_FILE" 2>/dev/null | tail -12 >&2
+    stop_logcat
+    # Save the capture BEFORE anything else truncates it (every later case's `start_logcat` does):
+    # "the clock never started for a group member", "it ticked and the budget had not crossed" and
+    # "it blocked and the grep missed it" are three different bugs and only the capture tells them apart.
+    cp -f "$LOGCAT_FILE" "${ALBUM}/logcat-group-limit-midsession-FAIL.txt" 2>/dev/null || true
+    return 1
+  fi
+
+  # The block landed. Prove it reached the SCREEN without an accessibility session: the overlay is
+  # its own activity, so the foreground moving from the member to Nudge is the arrival.
+  local fg_blocked
+  for ((i = 0; i < 10; i++)); do
+    fg_blocked="$(foreground_package)"
+    [[ "$fg_blocked" == "$APP_ID" ]] && break
+    sleep 1
+  done
+  shot 55-group-limit-midsession
+  if [[ "$fg_blocked" != "$APP_ID" ]]; then
+    fail "the limit fired but Nudge's overlay never came to the front (got '${fg_blocked}')"
+    rc=1
+  fi
+
+  # 7. Push the member back in front WITHOUT going home: same sitting, so the block must be shown
+  #    again and must NOT be counted again (issue #36's invariant, on a timer-driven path).
+  ash monkey -p "$GROUP_LIMIT_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  sleep 8
+  shot 56-group-limit-screen-again
+  local fg_again
+  fg_again="$(foreground_package)"
+  [[ "$fg_again" == "$APP_ID" ]] ||
+    warn "re-fronting the app did not put the limit screen back (got '${fg_again}') — the count assertion below is the real gate"
+
+  # 8. Leave for good and read the count: +1 for the whole episode.
+  go_home
+  nudge_route_home
+  local after b_after w_after
+  after="$(read_blocked_counts)" || { fail "could not re-read the week summary"; return 1; }
+  b_after="${after% *}"; w_after="${after#* }"
+  info "after:  blocked=${b_after} walkedAway=${w_after}"
+  shot 57-dashboard-after-group-midsession
+  stop_logcat
+  cp -f "$LOGCAT_FILE" "${ALBUM}/logcat-group-limit-midsession.txt" 2>/dev/null || true
+
+  local db=$(( b_after - b_before )) dw=$(( w_after - w_before )) relaunches
+  relaunches="$(log_count_re "$clock_re")"
+  (( db == 1 )) || {
+    fail "Blocked moved by ${db}, expected exactly +1 (the mid-session block is one confrontation, whatever the clock did: ${relaunches} foreground_clock lines)"
+    rc=1
+  }
+  (( dw == 0 )) || { fail "Walked away moved by ${dw}, expected 0 — nothing was declined in this case"; rc=1; }
+
+  CASE_NOTE="${GROUP_LIMIT_LABEL} usage=${usage_ms}ms, derived group limit=${limit_min}m, fired mid-session after ~${remaining_s}s, ${relaunches} clock blocks, Blocked ${b_before}->${b_after}"
+  return $rc
+}
+
+# ── bounce-non-apps (#181): a system sheet is not an app the user bounced through ──
+#
+# The report: Delay mode, two apps opened, "Bro. wtf. bounced through 4 apps". A sheet (photo
+# picker, document picker, sound picker, account chooser) is an activity of its own package with a
+# focused app window, so the classifier reports it as the app in front, and before #181 the check-in
+# counted it. Since #181 only a package with a launcher entry that is not a home screen counts.
+#
+# Two halves on ONE streak, and the order is the proof:
+#   NEGATIVE  wall YouTube · sheet 1 · YouTube · app a · sheet 2 · app a · Home · wall YouTube.
+#             Two walls, and YouTube + a + two sheets = MIN_APPS, so the pre-#181 rule posts here.
+#             The fix posts nothing, and logs each sheet as BOUNCE-SKIP why=not_launchable.
+#   POSITIVE  app b (still silent: three apps) · app c: posts once, the BOUNCE line names exactly
+#             YouTube, a, b, c with two walls, and notification id 3 is updated. Without this half a
+#             check-in that never fires at all would pass the negative.
+#   COOLDOWN  app a again: still one post.
+#
+# Fixture honesty, on the device itself: every app must have a launcher entry and every sheet must
+# not (`cmd package resolve-activity`, the same MAIN+INFO then MAIN+LAUNCHER lookup the app's
+# getLaunchIntentForPackage does). An answer the script cannot read is a FIXTURE failure, never a
+# guess: an "app" that is really not launchable would fail the positive for the wrong reason, a
+# "sheet" that is launchable would make the negative a test of nothing. MIN_APPS / MIN_WALLS and the
+# notification id are read out of the Kotlin sources, not retyped.
+#
+# From the moment the check-in is on until the verdicts, NOTHING here takes a UI dump: a
+# `uiautomator dump` can rebind the accessibility service, and a rebind forgets the streak
+# (docs/architecture/bounce-check-in.md, "Process death, or any accessibility-service rebind").
+# Only am / monkey / `dumpsys activity` / logcat, as group-limit-midsession does mid-session.
+#
+# Needs debug logging (setup turns it on): the oracle is the service's own lines.
+BOUNCE_DETECTOR_KT="${REPO_ROOT}/app/src/main/java/com/astraedus/nudge/domain/bounce/BounceDetector.kt"
+BOUNCE_NOTIFIER_KT="${REPO_ROOT}/app/src/main/java/com/astraedus/nudge/service/BounceCheckInNotifier.kt"
+# BounceDetector.neverCountedPackages minus Nudge itself: these return before the countability is
+# asked, so they log no BOUNCE-SKIP and a "sheet" in one of them would exercise nothing (the Android
+# 12 share sheet lives in `android`). test-device-qa.sh compares this list with the Kotlin one.
+BOUNCE_NEVER_COUNTED="android com.android.systemui com.android.permissioncontroller com.google.android.permissioncontroller"
+# Candidate sheets, tried in order until two different non-launchable packages come up. Each is ONE
+# string for the device shell (the quotes keep `image/*` from being globbed there; see device_clock
+# for why `ash` must get one argument). Whichever two the device has are what the case uses.
+BOUNCE_SHEET_INTENTS=(
+  "-a android.intent.action.GET_CONTENT -t 'image/*'"
+  "-a android.intent.action.OPEN_DOCUMENT -c android.intent.category.OPENABLE -t '*/*'"
+  "-a android.intent.action.RINGTONE_PICKER"
+  "-a com.google.android.gms.common.account.CHOOSE_ACCOUNT"
+)
+
+# `const val <NAME>: Int = <n>` out of a Kotlin file; prints nothing if it is not there.
+kotlin_int_const() { # file name
+  sed -n "s/^ *\(private \)\{0,1\}const val $2\(: Int\)\{0,1\} = \([0-9][0-9]*\).*/\3/p" "$1" 2>/dev/null | head -1
+}
+
+# yes | no | unknown: does <pkg> have a launcher entry on the device? "no" only when BOTH lookups
+# answer "No activity found"; anything else unreadable (an empty answer, a component of another
+# package) is "unknown", which every caller turns into a FIXTURE failure.
+launchable_state() { # pkg
+  local pkg="$1" cat out line nos=0
+  for cat in android.intent.category.INFO android.intent.category.LAUNCHER; do
+    out="$(ash "cmd package resolve-activity --brief -a android.intent.action.MAIN -c ${cat} ${pkg}" 2>/dev/null | tr -d '\r')"
+    while IFS= read -r line; do
+      [[ "$line" == "${pkg}/"* ]] && { echo yes; return 0; }
+    done <<<"$out"
+    [[ "$out" == *"No activity found"* ]] && nos=$((nos + 1))
+  done
+  (( nos == 2 )) && echo no || echo unknown
+}
+
+# The <n> apps to bounce through, one per line: from BOUNCE_APP_CANDIDATES, installed, launchable,
+# with no fixture rule, and none of the packages another case owns (a rule on one would wall it).
+pick_bounce_apps() { # n
+  local want="$1" installed pkg state picked=()
+  installed="$(ash pm list packages 2>/dev/null | tr -d '\r')"
+  for pkg in $BOUNCE_APP_CANDIDATES; do
+    (( ${#picked[@]} >= want )) && break
+    case " ${YOUTUBE_PKG} ${LIMIT_PKG} ${GROUP_LIMIT_PKG} ${BOUNDARY_PKG} ${LAUNCHER_PKG} ${APP_ID} " in
+      *" ${pkg} "*) continue ;;
+    esac
+    grep -qF "\"${pkg}\"" "${REPO_ROOT}/.maestro/fixtures/rules.json" && continue
+    grep -qFx "package:${pkg}" <<<"$installed" || continue
+    state="$(launchable_state "$pkg")"
+    case "$state" in
+      yes) picked+=("$pkg") ;;
+      no)  warn "bounce: ${pkg} has no launcher entry on this device, so it is not an app here; skipped" ;;
+      *)   fail "FIXTURE: could not read whether ${pkg} is launchable (resolve-activity gave no usable answer)"; return 1 ;;
+    esac
+  done
+  if (( ${#picked[@]} < want )); then
+    fail "FIXTURE: only ${#picked[@]} of ${want} launchable, ruleless apps among BOUNCE_APP_CANDIDATES"
+    return 1
+  fi
+  printf '%s\n' "${picked[@]}"
+}
+
+# Prints the new foreground package once it is no longer <pkg>; rc 1 if it never changes.
+wait_fg_not() { # package timeout_secs
+  local not="$1" timeout="${2:-10}" i fg
+  for ((i = 0; i < timeout; i++)); do
+    fg="$(foreground_package)"
+    [[ -n "$fg" && "$fg" != "$not" ]] && { printf '%s\n' "$fg"; return 0; }
+    sleep 1
+  done
+  return 1
+}
+
+# Before anything is armed: which package does each candidate sheet open as, and is it a sheet by
+# #181's rule? Prints "<pkg><TAB><intent>" for the first <n> distinct non-launchable ones.
+probe_bounce_sheets() { # n [packages the case bounces through, which a sheet must not be]
+  local want="$1"; shift
+  local intent fg state found=0 seen=" $* ${APP_ID} ${LAUNCHER_PKG} ${YOUTUBE_PKG} "
+  for intent in "${BOUNCE_SHEET_INTENTS[@]}"; do
+    (( found >= want )) && break
+    go_home
+    wait_fg "$LAUNCHER_PKG" 10 || { fail "Home did not reach the launcher before the sheet probe"; return 1; }
+    ash "am start ${intent}" >/dev/null 2>&1
+    if ! fg="$(wait_fg_not "$LAUNCHER_PKG" 8)"; then
+      warn "bounce: nothing came up for '${intent}' on this device"
+      continue
+    fi
+    go_home
+    case "$seen" in *" ${fg} "*) continue ;; esac
+    seen+="${fg} "
+    case " ${BOUNCE_NEVER_COUNTED} " in
+      *" ${fg} "*) warn "bounce: '${intent}' opened ${fg}, which the check-in never counts anyway; not a test of #181"; continue ;;
+    esac
+    state="$(launchable_state "$fg")"
+    case "$state" in
+      no)  printf '%s\t%s\n' "$fg" "$intent"; found=$((found + 1)) ;;
+      yes) warn "bounce: '${intent}' opened ${fg}, which HAS a launcher entry, so it counts by design (#181's known gap); not a sheet for this case" ;;
+      *)   fail "FIXTURE: could not read whether the sheet ${fg} is launchable"; return 1 ;;
+    esac
+  done
+  if (( found < want )); then
+    fail "FIXTURE: only ${found} of ${want} non-launchable sheets came up from BOUNCE_SHEET_INTENTS"
+    return 1
+  fi
+}
+
+# Reads the trace lines in the case's logcat capture:
+#   skip <pkg>  the `why` of the LAST BOUNCE-SKIP for that package (nothing if none)
+#   fire        "unit=<u> count=<n> walls=<w> apps=<sorted,comma-joined>" of the LAST BOUNCE line
+# The regex anchors on the marker after whitespace and takes the JSON to the end of the line, so a
+# BOUNCE-SKIP line is never read as a fire and the logcat prefix (`-v time`) does not matter.
+bounce_trace() { # skip <pkg> | fire
+  python3 -I -c '
+import json, re, sys
+path, what = sys.argv[1], sys.argv[2]
+pat = re.compile(r"(?:^|\s)(BOUNCE-SKIP|BOUNCE) (\{.*\})\s*$")
+last = None
+try:
+    lines = open(path, errors="replace").read().splitlines()
+except OSError:
+    lines = []
+for line in lines:
+    m = pat.search(line)
+    if not m:
+        continue
+    try:
+        o = json.loads(m.group(2))
+    except ValueError:
+        continue
+    if what == "skip" and m.group(1) == "BOUNCE-SKIP" and o.get("pkg") == sys.argv[3]:
+        last = o.get("why")
+    elif what == "fire" and m.group(1) == "BOUNCE":
+        last = "unit=%s count=%s walls=%s apps=%s" % (
+            o.get("unit"), o.get("count"), o.get("walls"), ",".join(sorted(o.get("apps") or [])))
+if last is not None:
+    print(last)
+' "$LOGCAT_FILE" "$@"
+}
+
+# The backup file that sets ONLY the check-in switch: no rules, groups or history, so importing it
+# changes nothing else (the import merges, and an absent setting is left alone).
+bounce_settings_json() { # true|false
+  case "$1" in true|false) ;; *) fail "bounce_settings_json: '$1' is not true or false"; return 1 ;; esac
+  printf '{"version":1,"exportedAt":1759000000000,"rules":[],"groups":[],"history":[],"settings":{"bounceCheckInEnabled":%s}}\n' "$1"
+}
+
+# Sets the switch to a VALUE through Settings > Import backup, the path the user has. Not a tap on the
+# Settings row: a tap TOGGLES, so its result depends on a state the script would have to read first.
+set_bounce_checkin() { # true|false
+  local local_file="${WORK}/bounce-$1.json" device_file="/sdcard/Download/nudge-qa-bounce-$1.json"
+  bounce_settings_json "$1" >"$local_file" || return 1
+  push_to_download "$local_file" "$device_file" || { fail "could not push ${device_file##*/} to the device"; return 1; }
+  import_backup_file "$device_file"
+}
+
+# Waits until the capture holds at least <n> lines containing <fixed text>.
+wait_log_count() { # fixed n timeout_secs
+  local i
+  for ((i = 0; i < $3; i++)); do
+    (( $(log_count "$1") >= $2 )) && return 0
+    sleep 1
+  done
+  (( $(log_count "$1") >= $2 ))
+}
+
+# Foreground is <pkg>, and still is a moment later: a Delay overlay that lands after the app
+# resumed is waited out instead of being raced by the next launch.
+bounce_settle() { # pkg
+  wait_fg "$1" 30 || return 1
+  sleep 3
+  wait_fg "$1" 30
+}
+
+bounce_open() { # pkg
+  ash monkey -p "$1" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  bounce_settle "$1" || { fail "${1} did not come to the foreground (got '$(foreground_package)')"; return 1; }
+}
+
+bounce_visit_sheet() { # pkg intent
+  ash "am start ${2}" >/dev/null 2>&1
+  wait_fg "$1" 10 || { fail "the sheet ${1} did not come up again (got '$(foreground_package)')"; return 1; }
+  sleep 2
+}
+
+# The negative half's verdict. Every check is made and reported, not just the first that fails.
+bounce_negative_verdict() { # posts notif_before notif_after why_sheet1 why_sheet2 sheet1 sheet2
+  local bad=0 why sheet i
+  (( $1 == 0 )) || { fail "the check-in POSTED ($1x) on two apps and two sheets: #181 is back"; bad=1; }
+  [[ "$3" == "$2" ]] || { fail "notification ${BOUNCE_NOTIF_ID:-?} was updated (${2} -> ${3}) on two apps and two sheets"; bad=1; }
+  for i in 0 1; do
+    why=$([[ $i == 0 ]] && echo "$4" || echo "$5"); sheet=$([[ $i == 0 ]] && echo "$6" || echo "$7")
+    case "$why" in
+      not_launchable) ;;
+      "") fail "no BOUNCE-SKIP for ${sheet}: it never reached the count as an app, so this run did not exercise #181 (FIXTURE)"; bad=1 ;;
+      *)  fail "${sheet} was left out as '${why}', expected not_launchable"; bad=1 ;;
+    esac
+  done
+  return $bad
+}
+
+# The positive half's verdict: exactly one post, the notification updated, and the BOUNCE line
+# naming exactly the expected apps and walls.
+bounce_positive_verdict() { # posts notif_before notif_after fire_summary expected_summary
+  local bad=0
+  (( $1 == 1 )) || { fail "expected exactly one check-in on ${5}, got $1"; bad=1; }
+  (( $3 > $2 )) || { fail "notification ${BOUNCE_NOTIF_ID:-?} was not updated (${2} -> ${3})"; bad=1; }
+  [[ "$4" == "$5" ]] || { fail "the check-in counted '${4:-nothing}', expected '${5}'"; bad=1; }
+  return $bad
+}
+
+case_bounce_non_apps() {
+  local rc=0
+  youtube_pip_off
+  bounce_non_apps_body || rc=$?
+  stop_logcat
+  cp -f "$LOGCAT_FILE" "${ALBUM}/logcat-bounce-non-apps.txt" 2>/dev/null || true
+  go_home
+  # The check-in is off by default and later cases assume it: a failed switch-back fails the case.
+  set_bounce_checkin false ||
+    { fail "could not switch the bounce check-in back off: turn it off in Settings > Check-ins by hand"; rc=1; }
+  youtube_pip_restore
+  return $rc
+}
+
+bounce_non_apps_body() {
+  local min_apps min_walls
+  min_apps="$(kotlin_int_const "$BOUNCE_DETECTOR_KT" MIN_APPS)"
+  min_walls="$(kotlin_int_const "$BOUNCE_DETECTOR_KT" MIN_WALLS)"
+  BOUNCE_NOTIF_ID="$(kotlin_int_const "$BOUNCE_NOTIFIER_KT" BOUNCE_NOTIFICATION_ID)"
+  if [[ -z "$min_apps" || -z "$min_walls" || -z "$BOUNCE_NOTIF_ID" ]]; then
+    fail "FIXTURE: could not read MIN_APPS / MIN_WALLS / BOUNCE_NOTIFICATION_ID from the Kotlin sources"
+    return 1
+  fi
+  # The sequence below is built on the detector's numbers: exactly two walls (YouTube, Home,
+  # YouTube); before the fix it counts YouTube + one app + two sheets (= MIN_APPS); the positive half
+  # needs MIN_APPS - 1 apps besides YouTube. A detector change must revisit the sequence, so a
+  # mismatch fails here instead of passing or failing for a reason nobody designed.
+  (( min_walls == 2 && min_apps == 4 )) ||
+    { fail "FIXTURE: the sequence is built for MIN_WALLS=2 and MIN_APPS=4, the detector has ${min_walls} / ${min_apps}"; return 1; }
+  local n_apps=$(( min_apps - 1 )) n_sheets=$(( min_apps - 2 ))
+
+  local out apps=() sheets=() intents=() p i
+  out="$(pick_bounce_apps "$n_apps")" || return 1
+  mapfile -t apps <<<"$out"
+  out="$(probe_bounce_sheets "$n_sheets" "${apps[@]}")" || return 1
+  while IFS=$'\t' read -r p i; do sheets+=("$p"); intents+=("$i"); done <<<"$out"
+  info "bounce: apps ${apps[*]}; sheets ${sheets[*]}"
+
+  # Switch it on FROM OFF, with the capture started in between: the service logs
+  # `bounce check-in enabled=` on every change and every reconnect, so only a line written after
+  # the `true` import (and the last one) proves the switch is on now. Off also clears any cooldown
+  # an earlier check-in left.
+  set_bounce_checkin false || return 1
+  start_logcat
+  set_bounce_checkin true || return 1
+  local last=""
+  for ((i = 0; i < 20; i++)); do
+    last="$(grep -F "bounce check-in enabled=" "$LOGCAT_FILE" 2>/dev/null | tail -1)"
+    [[ "$last" == *"enabled=true"* ]] && break
+    sleep 1
+  done
+  [[ "$last" == *"enabled=true"* ]] ||
+    { fail "no 'bounce check-in enabled=true' after the import (last: '${last}'); is debug logging on? run 'setup'"; return 1; }
+  sleep 3
+  a11y_is_bound || { fail "Nudge's accessibility service is not bound after the import"; return 1; }
+  # NO UI DUMPS FROM HERE TO THE VERDICTS (see the header).
+
+  local u0 walls
+  u0="$(nudge_notif_update_ms "$BOUNCE_NOTIF_ID")"
+  local delay="block package=${YOUTUBE_PKG} reason=delay_rule"
+
+  # Wall 1.
+  go_home
+  wait_fg "$LAUNCHER_PKG" 10 || { fail "Home did not reach the launcher"; return 1; }
+  ash am force-stop "$YOUTUBE_PKG" >/dev/null 2>&1
+  sleep 1
+  walls="$(log_count "$delay")"
+  ash monkey -p "$YOUTUBE_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  wait_log_count "$delay" $(( walls + 1 )) 20 || { fail "wall 1: ${YOUTUBE_PKG} was not gated (no delay_rule decision)"; return 1; }
+  bounce_settle "$YOUTUBE_PKG" || { fail "wall 1: the countdown never let ${YOUTUBE_PKG} through"; return 1; }
+
+  # Sheet 1 over YouTube, back to YouTube; app a, sheet 2 over it, back to a.
+  bounce_visit_sheet "${sheets[0]}" "${intents[0]}" || return 1
+  bounce_open "$YOUTUBE_PKG" || return 1
+  bounce_open "${apps[0]}" || return 1
+  bounce_visit_sheet "${sheets[1]}" "${intents[1]}" || return 1
+  bounce_open "${apps[0]}" || return 1
+
+  # Wall 2: Home revokes the pass, so YouTube is walled again, and it is a new wall (they went home).
+  go_home
+  wait_fg "$LAUNCHER_PKG" 10 || { fail "Home did not reach the launcher"; return 1; }
+  walls="$(log_count "$delay")"
+  ash monkey -p "$YOUTUBE_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  wait_log_count "$delay" $(( walls + 1 )) 20 || { fail "wall 2: ${YOUTUBE_PKG} was not gated after Home"; return 1; }
+  bounce_settle "$YOUTUBE_PKG" || { fail "wall 2: the countdown never let ${YOUTUBE_PKG} through"; return 1; }
+  # A sheet's facts are read off the event thread and the streak re-checked when they land.
+  sleep 5
+
+  # NEGATIVE: before #181 this exact sequence posted (YouTube, a and the two sheets, two walls).
+  bounce_negative_verdict "$(log_count "bounce check-in posted ")" "$u0" "$(nudge_notif_update_ms "$BOUNCE_NOTIF_ID")" \
+    "$(bounce_trace skip "${sheets[0]}")" "$(bounce_trace skip "${sheets[1]}")" "${sheets[0]}" "${sheets[1]}" || return 1
+  info "negative: no check-in on YouTube, ${apps[0]} and two sheets; both sheets logged not_launchable"
+
+  # POSITIVE: the same streak, real apps. One short of MIN_APPS stays silent; the last one posts.
+  local k
+  for ((k = 1; k < n_apps - 1; k++)); do
+    bounce_open "${apps[$k]}" || return 1
+  done
+  (( $(log_count "bounce check-in posted ") == 0 )) ||
+    { fail "the check-in posted with only $(( min_apps - 1 )) apps"; return 1; }
+  ash monkey -p "${apps[$((n_apps - 1))]}" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  wait_log_count "bounce check-in posted " 1 15 || true
+  sleep 2
+  local expected
+  expected="$(printf '%s\n' "$YOUTUBE_PKG" "${apps[@]}" | LC_ALL=C sort | paste -sd, -)"
+  bounce_positive_verdict "$(log_count "bounce check-in posted ")" "$u0" "$(nudge_notif_update_ms "$BOUNCE_NOTIF_ID")" \
+    "$(bounce_trace fire)" "unit=apps count=${min_apps} walls=${min_walls} apps=${expected}" || return 1
+
+  # COOLDOWN: one more app inside the 30 minutes posts nothing new.
+  bounce_open "${apps[0]}" || return 1
+  sleep 3
+  (( $(log_count "bounce check-in posted ") == 1 )) ||
+    { fail "a second check-in posted inside the cooldown"; return 1; }
+
+  CASE_NOTE="sheets ${sheets[*]} not counted (no post on 2 apps + 2 sheets, 2 walls); posted once on ${min_apps} apps; cooldown held"
+  return 0
+}
+
 # ── notif-idle (#63): the ongoing notification is posted on CHANGE, never on a timer ──
 #
 # Two halves, and the ORDER matters.
@@ -1827,7 +2671,7 @@ count_app_crashes() {
 #             CRASH_BASELINE_FILE.
 #   continue  a later chunk: reuses the recorded count, so `crash-check` keeps meaning "no crash
 #             since the series started". Re-baselining per chunk would let a crash during group1
-#             pass a crash-check that only watches group3 — the chunked gate quietly weaker than
+#             pass a crash-check that only watches group5 — the chunked gate quietly weaker than
 #             `all`. A missing or stale file (> 3h: a series is ~25 minutes, so older is some
 #             other day's) falls back to a fresh baseline and says so, rather than inventing a window.
 CRASH_BASELINE_FILE="${CRASH_BASELINE_FILE:-${QA_CACHE_DIR}/crash-baseline}"
@@ -1988,6 +2832,1025 @@ case_refusal_alert() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Schedule boundaries (#169, #170): the app reacts when a schedule STARTS or ENDS under a user
+# who is doing nothing
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Both bugs live in the gap a user sitting still opens: no touch means no accessibility event, and
+# an event is the only thing that ever re-asked the engine. So a schedule that starts under an open
+# app blocked nothing until the user next switched apps (#169), and a block screen whose schedule had
+# ended stayed up until they pressed something (#170). The fix is a one-shot timer at the boundary
+# minute, which is exactly what a unit test cannot see: it needs a REAL minute boundary on a real
+# clock. The device clock is never moved (a forced clock is unproven until a real-time run agrees).
+#
+# ## How the rule is seeded: an IMPORTED fixture with arbitrary minutes
+# The rule editor moves times in 15-minute steps (ui/components/rule/TimeSelector.kt), which would
+# make a case wait up to a quarter of an hour. The backup importer takes ANY minute: RuleExporter's
+# parseRuleFields reads `scheduleStartMinute` / `scheduleEndMinute` with optIntOrNull (getInt, no
+# range or step check, RuleExporter.kt:826-829) and ImportRulesUseCase.toBlockRule passes them
+# straight into the BlockRule. So the case reads the DEVICE's local clock (the app evaluates in the
+# device zone), writes a one-rule file for the minutes it wants, and imports it through Nudge's own
+# Settings > Import backup, driven with element-located taps exactly like set_daily_limit_minutes.
+# The import is done BEFORE the app under test is opened: every `uiautomator dump` rebinds the
+# accessibility service (see daily-limit-midsession), so no dump may happen once the case is waiting.
+#
+# ## Why not Calculator
+# Calculator carries the 1-minute daily limit, spent by the daily-limit cases that run just before;
+# it would be blocked before the schedule starts, and for a different reason than the one under test.
+# Not Contacts (com.google.android.contacts) either: group-limit-midsession (#146) puts a group
+# daily limit on it, and a run of both would leave Contacts limited for the wrong reason.
+# BOUNDARY_PKG (Google Keep by default) is an ordinary app with no other rule.
+#
+# ## Leftovers
+# The imported rule stays (a days-and-times window on today's weekday, or every day when it crosses
+# midnight). `setup` starts from `pm clear`, so a series never sees it; a re-run of one of these cases
+# first waits (boundary_wait_clear) for the last seeded window to end, then seeds a fresh one. Rules are deduplicated on
+# target+mode+schedule, so different minutes never collide.
+
+# "<iso weekday 1-7> <minute of day> <second> <epoch seconds>" on the DEVICE, in its local time.
+# One `date` call so the four numbers describe the same instant.
+device_clock() {
+  local dow hh mm ss epoch
+  # ONE string argument: `adb shell` joins argv with spaces and the DEVICE shell re-parses it, so
+  # the unquoted form arrived as `date +%u %H %M %S %s` (separate words) and failed on the bench.
+  # (Every other multi-word `ash` argument in this file is already passed as one string.)
+  read -r dow hh mm ss epoch < <(ash "date +'%u %H %M %S %s'" 2>/dev/null | tr -d '\r')
+  [[ -n "${epoch:-}" ]] || return 1
+  printf '%d %d %d %d\n' "$dow" $(( 10#$hh * 60 + 10#$mm )) $(( 10#$ss )) "$epoch"
+}
+
+# "<days> <start minute> <end minute>" for a window that starts <offset> minutes after the minute
+# <now> and lasts <length> minutes. Pure arithmetic (tested device-free). Days is today's ISO weekday,
+# or "-" (every day) when the window reaches midnight, where the weekday would be wrong and the
+# end<start wrap is the evaluator's own overnight form (ScheduleEvaluator.isScheduledAt).
+boundary_window() { # iso_dow minute_of_day offset_min length_min
+  local dow="$1" now="$2" start end
+  start=$(( now + $3 ))
+  end=$(( start + $4 ))
+  if (( end < 1440 )); then
+    printf '%s %d %d\n' "$dow" "$start" "$end"
+  else
+    printf '%s %d %d\n' "-" $(( start % 1440 )) $(( end % 1440 ))
+  fi
+}
+
+# The one-rule backup file: a HARD_BLOCK on <pkg> in the given window. Every key the importer reads
+# is spelled out, as in .maestro/fixtures/rules.json, so the file does not lean on parser defaults.
+boundary_fixture_json() { # pkg days(or -) start_minute end_minute
+  local days_json=null
+  [[ "$2" != "-" ]] && days_json="\"$2\""
+  cat <<EOF
+{
+  "version": 1,
+  "exportedAt": 1759000000000,
+  "rules": [
+    {
+      "packageName": "$1",
+      "groupName": null,
+      "mode": "HARD_BLOCK",
+      "delaySeconds": 15,
+      "dailyLimitMinutes": null,
+      "enabled": true,
+      "scheduleDays": ${days_json},
+      "scheduleStartMinute": $3,
+      "scheduleEndMinute": $4,
+      "inAppFeatures": null,
+      "grayscale": false,
+      "showCounter": false,
+      "autoKickAfter": null,
+      "showTimeRemaining": false,
+      "autoKickCooldownSeconds": 60,
+      "webDomains": null,
+      "autoKickAfterMinutes": null,
+      "webBlockMode": null,
+      "tabVanish": false,
+      "followingSteer": false
+    }
+  ],
+  "groups": [],
+  "history": []
+}
+EOF
+}
+
+# Writes the fixture for a window <offset>/<length> minutes from now, imports it through the UI, and
+# sets BOUNDARY_START_EPOCH / BOUNDARY_END_EPOCH (device epoch seconds) to the real boundaries.
+seed_boundary_rule() { # offset_min length_min
+  local dow mod sec epoch days start end
+  read -r dow mod sec epoch < <(device_clock) || { fail "could not read the device clock"; return 1; }
+  read -r days start end < <(boundary_window "$dow" "$mod" "$1" "$2")
+  # Boundaries are on the minute: the first second of minute `start`, not "start minutes from now".
+  BOUNDARY_START_EPOCH=$(( epoch - sec + $1 * 60 ))
+  BOUNDARY_END_EPOCH=$(( BOUNDARY_START_EPOCH + $2 * 60 ))
+  echo "$BOUNDARY_END_EPOCH" >"$BOUNDARY_LAST_END_FILE"
+  info "device clock ${mod}min ${sec}s (weekday ${dow}); seeding ${BOUNDARY_PKG} HARD_BLOCK days=${days} ${start}->${end} (minute of day)"
+
+  boundary_fixture_json "$BOUNDARY_PKG" "$days" "$start" "$end" >"${WORK}/boundary-rules.json"
+  push_to_download "${WORK}/boundary-rules.json" "$BOUNDARY_FIXTURE_DEVICE_PATH" ||
+    { fail "could not push the boundary rule file to the device"; return 1; }
+
+  import_backup_file "$BOUNDARY_FIXTURE_DEVICE_PATH"
+}
+
+# Settings > Import backup > the file > Import > Import Complete > OK: the same path
+# .maestro/nudge-setup.yaml walks, driven here by element-located taps because a Maestro session
+# would hold the accessibility service off (and the caller must not need to re-establish it).
+# The file must already be in Download via push_to_download, which also makes the picker list it
+# first. Shared by the schedule-boundary seed and bounce-non-apps' settings switch.
+import_backup_file() { # device_path
+  local name="${1##*/}"
+  nudge_route_home
+  scroll_to_text "Settings" 8 && ui_tap_text "Settings" 10 || { fail "could not open Settings from the dashboard"; return 1; }
+  scroll_to_text "Import backup" 8 && ui_tap_text "Import backup" 10 || { fail "no 'Import backup' row in Settings"; return 1; }
+  ui_tap_text "$name" 30 || { fail "the file picker never listed ${name}"; return 1; }
+  ui_tap_text "Import" 20 || { fail "no Import button on the preview"; return 1; }
+  ui_wait_text "Import Complete" 25 || { fail "the import never reported 'Import Complete'"; return 1; }
+  ui_tap_text "OK" 10 || return 1
+  nudge_route_home
+}
+
+boundary_preflight() {
+  ash pm list packages "$BOUNDARY_PKG" 2>/dev/null | tr -d '\r' | grep -qx "package:${BOUNDARY_PKG}" || {
+    fail "${BOUNDARY_PKG} is not installed on the bench: set BOUNDARY_PKG to an ordinary single-activity app with no rule"
+    return 1
+  }
+}
+
+# Seconds from now (device clock) until <epoch>, floored at 0.
+secs_until_epoch() { # device epoch seconds
+  local now
+  now="$(ash date +%s 2>/dev/null | tr -d '\r')"
+  [[ -n "$now" ]] || { echo 0; return; }
+  echo $(( $1 > now ? $1 - now : 0 ))
+}
+
+# Case independence: an earlier boundary case's rule is still in the DB (the import merges) and keeps
+# covering BOUNDARY_PKG until its own end. Seeding a second window on top of it makes the app
+# re-block at the FIRST rule's end (correctly), which the end-overlay case would count as a failure
+# (bench 2026-11-08). So wait, on the recorded end epoch (never a fixed sleep), until nothing seeded
+# earlier covers the app. A removal through the UI is not an option: this harness does not drive
+# the rule editor for state. A leftover from a previous series is wiped by `setup` (pm clear), which
+# clears the record too; a stale record only ever costs the (<= window length) wait, never a pass.
+boundary_wait_clear() {
+  local last="" left deadline
+  [[ -s "$BOUNDARY_LAST_END_FILE" ]] && last="$(tr -dc '0-9' <"$BOUNDARY_LAST_END_FILE")"
+  [[ -n "$last" ]] || return 0
+  left="$(secs_until_epoch "$last")"
+  (( left > 0 )) || return 0
+  info "an earlier boundary rule still covers ${BOUNDARY_PKG} for ${left}s: waiting for its window to end so this case starts from a clean slate"
+  deadline=$(( $(date +%s) + left + BOUNDARY_WAIT_SLACK_SECS ))
+  while (( $(date +%s) < deadline )); do
+    (( $(secs_until_epoch "$last") == 0 )) && { sleep 2; return 0; }
+    sleep 3
+  done
+  fail "the earlier boundary rule's window never ended on the device clock"
+  return 1
+}
+
+# Stop the capture and keep it: every case that asserts the app REACTED must leave the log behind
+# (a later start_logcat truncates the shared file), because "never armed", "armed but never fired"
+# and "fired but the block failed" are three different bugs.
+boundary_keep_log() { # tag
+  stop_logcat
+  cp -f "$LOGCAT_FILE" "${ALBUM}/logcat-$1.txt" 2>/dev/null || true
+}
+
+# ── schedule-start-open-app (#169): a schedule that starts over an open app blocks it ──
+#
+# The app is opened BEFORE the schedule starts (so it is allowed), then nobody touches the phone. At
+# the start minute the service's one-shot timer must re-evaluate the app in front and block it
+# exactly as a fresh open would. Before the fix the user sat in the app untouched indefinitely.
+#
+# The sit uses only non-invasive oracles (`dumpsys activity activities` and the service's own log):
+# a `uiautomator dump` would rebind the very service whose timer is under test.
+case_schedule_start_open_app() {
+  local rc=0 i fg
+  boundary_preflight || return 1
+  go_home
+  wait_fg "$LAUNCHER_PKG" 10 || { fail "Home did not reach the launcher"; return 1; }
+
+  # Start BOUNDARY_LEAD_MIN minutes out; the window is 1 minute long (its end is not under test, and
+  # schedule-end-overlay waits for it to end before seeding its own, so a short window is chunk time).
+  boundary_wait_clear || return 1
+  seed_boundary_rule "$BOUNDARY_LEAD_MIN" 1 || return 1
+
+  # Settled start, then open the app. A fresh capture so nothing counted below is a leftover.
+  go_home
+  ash am force-stop "$BOUNDARY_PKG" >/dev/null 2>&1
+  sleep 2
+  start_logcat
+  ash monkey -p "$BOUNDARY_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  wait_fg "$BOUNDARY_PKG" 15 || { fail "${BOUNDARY_PKG} did not come to the foreground"; boundary_keep_log schedule-start-open-app-FAIL; return 1; }
+  sleep 3
+  shot 60-boundary-app-open-before-start
+
+  # Precondition, or the case proves nothing: the app must be open and NOT blocked, with the window
+  # still in the future. A block here means the import was slower than BOUNDARY_LEAD_MIN (the
+  # window already opened, so this would be the ordinary fresh-open path, not #169).
+  local wait_s
+  wait_s="$(secs_until_epoch "$BOUNDARY_START_EPOCH")"
+  if (( wait_s == 0 )) || (( $(log_count "handling block package=${BOUNDARY_PKG}") > 0 )); then
+    fail "the window had already started (or the app was already blocked) when the app was opened: the import took too long for BOUNDARY_LEAD_MIN=${BOUNDARY_LEAD_MIN}; this run would test a fresh open, not #169"
+    boundary_keep_log schedule-start-open-app-FAIL; return 1
+  fi
+  info "app open and allowed; the schedule starts in ${wait_s}s of real time. Sitting still, no taps, no dumps."
+
+  # Wait ON THE CONDITION (the block decision for the app, from the service's own log), bounded by
+  # the real boundary plus slack. The deadline is derived from the boundary, never a fixed sleep.
+  local deadline=$(( $(date +%s) + wait_s + BOUNDARY_WAIT_SLACK_SECS )) blocked=0 left=""
+  while (( $(date +%s) < deadline )); do
+    if (( $(log_count "handling block package=${BOUNDARY_PKG}") > 0 )); then blocked=1; break; fi
+    fg="$(foreground_package)"
+    # The launcher in front means we were bounced out, and a block after that would be the
+    # fresh-open path in disguise.
+    [[ "$fg" == "$LAUNCHER_PKG" ]] && left="$fg"
+    sleep 3
+  done
+  if [[ -n "$left" ]]; then
+    fail "the app was left during the sit (saw '${left}' in front): this case only proves anything while we stay inside"
+    rc=1
+  fi
+  if (( blocked == 0 )); then
+    fail "the schedule started ${BOUNDARY_WAIT_SLACK_SECS}s ago and the open app was never blocked (no 'handling block package=${BOUNDARY_PKG}')"
+    grep -E "schedule boundary|handling block|evaluate package=${BOUNDARY_PKG}" "$LOGCAT_FILE" 2>/dev/null | tail -12 >&2
+    boundary_keep_log schedule-start-open-app-FAIL
+    return 1
+  fi
+
+  # The block must be on the SCREEN: the overlay is Nudge's own activity, so Nudge in front is the
+  # arrival. Poll for it, then read nothing from the accessibility tree.
+  for ((i = 0; i < 10; i++)); do
+    fg="$(foreground_package)"
+    [[ "$fg" == "$APP_ID" ]] && break
+    sleep 1
+  done
+  shot 61-boundary-start-blocked
+  if [[ "$fg" != "$APP_ID" ]]; then
+    fail "the block was decided but Nudge's block screen is not in front (got '${fg}')"
+    rc=1
+  fi
+  # And it must have come from the timer, not from some stray event: the service logs the re-check.
+  if (( $(log_count "schedule boundary re-check package=${BOUNDARY_PKG}") == 0 )); then
+    fail "blocked, but with no 'schedule boundary re-check package=${BOUNDARY_PKG}' line: the boundary timer did not do it"
+    rc=1
+  fi
+  if (( $(log_count_re "handling block package=${BOUNDARY_PKG} mode=HARD_BLOCK") == 0 )); then
+    fail "the block was not the seeded HARD_BLOCK rule (see the capture)"
+    rc=1
+  fi
+  info "armed lines: $(log_count "schedule boundary armed"), re-check lines: $(log_count "schedule boundary re-check package=${BOUNDARY_PKG}")"
+  boundary_keep_log "schedule-start-open-app$([[ $rc -ne 0 ]] && echo -FAIL)"
+  go_home
+  CASE_NOTE="${BOUNDARY_PKG} opened ${wait_s}s before its schedule; blocked untouched after the boundary (re-check line + HARD_BLOCK + overlay in front)"
+  return $rc
+}
+
+# ── schedule-end-overlay (#170): a block screen closes itself when its schedule ends ──
+#
+# A HARD_BLOCK window that is already open: opening the app lands on the block screen. Nobody
+# touches anything. When the window ends the screen must close and the user must be back in the
+# app they had opened (not Nudge, not the launcher), with the overlay's own log line as the proof
+# that it was the end-of-block path.
+#
+# NOT covered here, deliberately: "another rule still covers the app, so ITS block shows instead".
+# It needs a second, permanent all-the-time rule on the same app, and the only way to remove a
+# rule is the rule-editor UI, which this harness refuses to drive for state (a Compose Switch has
+# no text node). Left behind it would block that app in every later case until the next `setup`.
+# It is a pure engine question (rules covering a package at a given minute) and belongs at L1.
+#
+# Independence: this case runs right after schedule-start-open-app on the same package, whose rule is
+# still in the DB. boundary_wait_clear() holds this case until that window is over, so only this
+# case's rule ever covers the app (see there for why not "just overlap it").
+case_schedule_end_overlay() {
+  local rc=0 i fg
+  boundary_preflight || return 1
+  go_home
+  wait_fg "$LAUNCHER_PKG" 10 || { fail "Home did not reach the launcher"; return 1; }
+
+  # Already open (offset 0), 3 minutes long: the import (~40s) and the open fit inside it with
+  # ~2 minutes to spare before the end.
+  boundary_wait_clear || return 1
+  seed_boundary_rule 0 3 || return 1
+
+  go_home
+  ash am force-stop "$BOUNDARY_PKG" >/dev/null 2>&1
+  sleep 2
+  start_logcat
+  ash monkey -p "$BOUNDARY_PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+
+  # Precondition: the block screen is up. The decision from the service's log, and Nudge in front.
+  local up=0
+  for ((i = 0; i < 25; i++)); do
+    if (( $(log_count_re "handling block package=${BOUNDARY_PKG} mode=HARD_BLOCK") > 0 )) &&
+       [[ "$(foreground_package)" == "$APP_ID" ]]; then up=1; break; fi
+    sleep 1
+  done
+  shot 62-boundary-end-block-up
+  if (( up == 0 )); then
+    fail "no HARD_BLOCK screen for ${BOUNDARY_PKG} after opening it inside its window (the window may already have ended: slow import?)"
+    boundary_keep_log schedule-end-overlay-FAIL; return 1
+  fi
+  local blocks_before wait_s
+  blocks_before="$(log_count "handling block package=${BOUNDARY_PKG}")"
+  wait_s="$(secs_until_epoch "$BOUNDARY_END_EPOCH")"
+  info "block screen up; its schedule ends in ${wait_s}s of real time. Sitting still, no taps, no dumps."
+
+  # Wait ON THE CONDITION: the app (not Nudge) in front, bounded by the real end plus slack.
+  local deadline=$(( $(date +%s) + wait_s + BOUNDARY_WAIT_SLACK_SECS )) back=0
+  while (( $(date +%s) < deadline )); do
+    fg="$(foreground_package)"
+    if [[ "$fg" == "$BOUNDARY_PKG" ]]; then back=1; break; fi
+    sleep 3
+  done
+  if (( back == 0 )); then
+    fail "the schedule ended ${BOUNDARY_WAIT_SLACK_SECS}s ago and the block screen is still up (front: '${fg}')"
+    grep -E "schedule boundary|block ended under|handling block" "$LOGCAT_FILE" 2>/dev/null | tail -12 >&2
+    boundary_keep_log schedule-end-overlay-FAIL
+    return 1
+  fi
+
+  # Settle, then re-check: back in the app must STAY back (no re-block), and it is the app, not
+  # Nudge and not the launcher.
+  sleep 5
+  fg="$(foreground_package)"
+  shot 63-boundary-end-back-in-app
+  if [[ "$fg" != "$BOUNDARY_PKG" ]]; then
+    fail "after the block ended, '${fg}' is in front, expected ${BOUNDARY_PKG}"
+    rc=1
+  fi
+  if (( $(log_count "handling block package=${BOUNDARY_PKG}") != blocks_before )); then
+    fail "the app was blocked AGAIN after its schedule ended (a block after the end means a rule still covered it)"
+    rc=1
+  fi
+  if (( $(log_count "block ended under the overlay, closing back into the app") == 0 )); then
+    fail "no 'block ended under the overlay, closing back into the app' line: the overlay did not close itself"
+    rc=1
+  fi
+  boundary_keep_log "schedule-end-overlay$([[ $rc -ne 0 ]] && echo -FAIL)"
+  go_home
+  CASE_NOTE="${BOUNDARY_PKG} HARD_BLOCK screen closed itself ~${wait_s}s later at its schedule end, app in front, no re-block"
+  return $rc
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# group6: Nuke profiles + timer (nuke-profiles, nuke-timer)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Two cases on Nudge's own Nuke screen. Everything here is UI the app draws, so the dump-and-tap
+# style of the rest of the file applies unchanged; the one blocking check is "launch a nuked app and
+# see 'Nuked.'", a dump of Nudge's own overlay.
+#
+# DEBUG-ONLY STEPS. Pairing a key and scanning it need a QR scan, and the bench camera faces a desk.
+# `adb shell setprop debug.nudge.fakescan '<payload>'` makes the next scan return that payload, but
+# only when BuildConfig.DEBUG is true (ui/qr/DebugScanOverride.kt); on the release-signed `main-latest`
+# APK the property is ignored. So each case DETECTS a debuggable build (nuke_scan_available) and, when
+# there is none, SKIPs its scan steps with the reason instead of failing. The scan-free steps (profile
+# save / apply, the timer dropdown) run on every build. The property is cleared on every exit path
+# (nuke_fakescan_clear at the end of each case, and in cleanup() for an interrupted run).
+#
+# ENDING NUKE. nuke-profiles ends Nuke itself (no timer: scanning the key ends it). nuke-timer arms a
+# 15-minute timer, so a scan cannot end Nuke for 15 minutes and the emergency code is 64 characters
+# (covered by NukeViewModelTest / NukeGateTest, not typed here). It therefore ends via the qa control
+# channel's `reset` (nuke_qa_reset) when the installed build is a qa build; on a plain debug build it
+# LEAVES NUKE ON and says how to end it (scan the key after the timer, or NUKE_TIMER_WAIT=1). `reset`
+# is the bench baseline: it also clears rules, groups and history.
+
+NUKE_QA_KEY="${NUKE_QA_KEY:-qa-nuke-key-183}"
+NUKE_APP_A_PKG="${NUKE_APP_A_PKG:-$BOUNDARY_PKG}"
+# The label exactly as the Nuke list prints it (the launcher label, case-sensitive): Keep's is "Keep
+# notes" with a small n on the bench. "Keep Notes" matched nothing and both cases failed on it.
+NUKE_APP_A_LABEL="${NUKE_APP_A_LABEL:-Keep notes}"
+NUKE_APP_B_PKG="${NUKE_APP_B_PKG:-com.google.android.calendar}"
+NUKE_APP_B_LABEL="${NUKE_APP_B_LABEL:-Calendar}"
+NUKE_TIMER_WAIT="${NUKE_TIMER_WAIT:-0}"
+NUKE_FAKESCAN_SET=0
+
+# Is the installed build debuggable, i.e. does debug.nudge.fakescan do anything? A release APK never
+# carries DEBUGGABLE in its package flags.
+# Read into a variable, never `| grep -q` (pipefail + SIGPIPE, see screen_is_usable): piped, a debug
+# build that DOES match read as "release" and every scan step was silently skipped.
+nuke_scan_available() {
+  local pkg
+  pkg="$(ash dumpsys package "$APP_ID" 2>/dev/null | tr -d '\r')"
+  [[ "$pkg" =~ flags=[^$'\n']*DEBUGGABLE ]]
+}
+
+# Is the QA control channel (src/qa only) in the installed build?
+nuke_has_qa_receiver() {
+  local pkg
+  pkg="$(ash dumpsys package "$APP_ID" 2>/dev/null | tr -d '\r')"
+  [[ "$pkg" == *QaControlReceiver* ]]
+}
+
+nuke_fakescan_set() { # payload: the next scan returns it
+  NUKE_FAKESCAN_SET=1
+  ash setprop debug.nudge.fakescan "'$1'" >/dev/null 2>&1
+}
+
+nuke_fakescan_clear() { # idempotent; only touches the device when a payload was ever set
+  [[ "$NUKE_FAKESCAN_SET" -eq 1 ]] || return 0
+  ash setprop debug.nudge.fakescan "''" >/dev/null 2>&1
+  NUKE_FAKESCAN_SET=0
+}
+
+# The bench baseline through the qa control channel: Nuke off, timer cleared (and rules/groups/history).
+nuke_qa_reset() {
+  ash am broadcast -n "${APP_ID}/${NAMESPACE}.qa.QaControlReceiver" \
+    -a dev.astraedus.nudge.qa.CMD --es cmd reset >/dev/null 2>&1
+  sleep 2
+}
+
+# Extra locator modes on the same dump (written next to locate.py by write_ui_state).
+#   prefix <needle>    centre of the first CLICKABLE node whose text/content-desc STARTS with it
+#   labelxy <label>    centre of the node with that text that is not a text field (an app row's label,
+#                      not the search box that now holds the same words)
+#   checked <label>    "true"/"false": the checkbox in the row of that label
+#   boxxy <label>      centre of that checkbox (the row's only clickable node)
+#   selected <needle>  "true"/"false": whether the chip with that text/desc is selected
+write_ui_state() {
+  cat >"${WORK}/uistate.py" <<'PYEOF'
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+mode, path, needle = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    root = ET.parse(path).getroot()
+except ET.ParseError:
+    sys.exit(0)
+parent = {c: p for p in root.iter() for c in p}
+
+
+def centre(n):
+    b = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", n.get("bounds") or "")
+    if not b:
+        return None
+    x1, y1, x2, y2 = (int(g) for g in b.groups())
+    return "%d %d" % ((x1 + x2) // 2, (y1 + y2) // 2)
+
+
+def names(n):
+    return (n.get("text") or "", n.get("content-desc") or "")
+
+
+nodes = list(root.iter("node"))
+if mode == "prefix":
+    # A Compose card or row is often a clickable container whose TEXT sits on a child node, so a
+    # matching node that is not clickable itself is tapped through its nearest clickable ancestor.
+    for n in nodes:
+        if not any(s.startswith(needle) for s in names(n)):
+            continue
+        cur = n
+        while cur is not None and cur.get("clickable") != "true":
+            cur = parent.get(cur)
+        c = centre(cur) if cur is not None else None
+        if c:
+            print(c)
+            break
+elif mode == "labelxy":
+    for n in nodes:
+        if n.get("class") != "android.widget.EditText" and needle in names(n):
+            c = centre(n)
+            if c:
+                print(c)
+                break
+elif mode == "checked":
+    for n in nodes:
+        if n.get("class") == "android.widget.EditText" or needle not in names(n):
+            continue
+        cur = n
+        while cur is not None:
+            boxes = [d for d in cur.iter("node") if d.get("checkable") == "true"]
+            if boxes:
+                print(boxes[0].get("checked"))
+                sys.exit(0)
+            cur = parent.get(cur)
+        break
+elif mode == "boxxy":
+    # Centre of the checkbox in the row of that label. On the Nuke list the CheckBox is the row's only
+    # clickable node: tapping the label or the icon (what labelxy finds) does nothing.
+    for n in nodes:
+        if n.get("class") == "android.widget.EditText" or needle not in names(n):
+            continue
+        cur = n
+        while cur is not None:
+            boxes = [d for d in cur.iter("node") if d.get("checkable") == "true"]
+            if boxes:
+                c = centre(boxes[0])
+                if c:
+                    print(c)
+                sys.exit(0)
+            cur = parent.get(cur)
+        break
+elif mode == "selected":
+    for n in nodes:
+        if needle not in names(n):
+            continue
+        kin = [n] + list(n.iter("node"))
+        p1 = parent.get(n)
+        if p1 is not None:
+            kin.append(p1)
+            p2 = parent.get(p1)
+            if p2 is not None:
+                kin.append(p2)
+        # A Compose FilterChip reaches the dump as checkable="true" checked="true" on its clickable
+        # parent, NOT selected="true" (measured on the bench): reading only `selected` called every
+        # chip unselected, and the extra tap opened the chip's menu instead of applying it.
+        print("true" if any(k.get("selected") == "true" or
+                            (k.get("checkable") == "true" and k.get("checked") == "true")
+                            for k in kin) else "false")
+        break
+PYEOF
+}
+
+ui_has_re() { grep -aEq "(text|content-desc)=\"[^\"]*(${1})" "$UI_XML" 2>/dev/null; } # ERE, last snapshot
+
+ui_wait_re() { # ERE timeout_secs: snackbars live ~4s, so this polls as fast as a dump allows
+  local timeout="${2:-15}" i
+  for ((i = 0; i < timeout; i++)); do
+    ui_snapshot
+    ui_has_re "$1" && return 0
+    sleep 1
+  done
+  return 1
+}
+
+ui_xy() { python3 "${WORK}/uistate.py" "$1" "$UI_XML" "$2"; } # mode needle
+
+ui_tap_xy_mode() { # mode needle [timeout_secs]
+  local mode="$1" needle="$2" timeout="${3:-10}" xy i
+  for ((i = 0; i < timeout; i++)); do
+    ui_snapshot
+    xy="$(ui_xy "$mode" "$needle")"
+    if [[ -n "$xy" ]]; then
+      # shellcheck disable=SC2086
+      ash input tap $xy >/dev/null 2>&1
+      sleep 1
+      return 0
+    fi
+    sleep 1
+  done
+  fail "cannot tap (${mode}) '${needle}': not on screen within ${timeout}s"
+  return 1
+}
+
+nuke_scroll_top() {
+  local i
+  for ((i = 0; i < 4; i++)); do ash input swipe 540 600 540 1700 250 >/dev/null 2>&1; done
+  sleep 1
+}
+
+nuke_hide_keyboard() {
+  local ime
+  # A variable, not `| grep -q` (pipefail + SIGPIPE, see screen_is_usable): piped, a SHOWN keyboard
+  # read as hidden and stayed up over the app list.
+  ime="$(ash dumpsys input_method 2>/dev/null | tr -d '\r')"
+  [[ "$ime" == *mInputShown=true* ]] &&
+    ash input keyevent KEYCODE_BACK >/dev/null 2>&1
+  sleep 1
+}
+
+# Taps $1 (exact text/desc) wherever it is on the Nuke screen: as it is, then from the top, then
+# scrolling down a page at a time.
+nuke_tap() { # text
+  local needle="$1" xy i
+  for ((i = 0; i < 9; i++)); do
+    ui_snapshot
+    xy="$(python3 "${WORK}/locate.py" "$UI_XML" "$needle")"
+    if [[ -n "$xy" ]]; then
+      # shellcheck disable=SC2086
+      ash input tap $xy >/dev/null 2>&1
+      sleep 1
+      return 0
+    fi
+    if (( i == 0 )); then
+      nuke_scroll_top
+    elif (( i >= 2 )); then
+      ash input swipe 540 1500 540 700 300 >/dev/null 2>&1
+      sleep 1
+    fi
+  done
+  fail "cannot tap '${needle}' on the Nuke screen"
+  return 1
+}
+
+# Home -> Nuke screen via the dashboard's Nuke card (its description starts with "Nuke").
+nuke_open_screen() {
+  local i xy
+  nudge_route_home
+  # The dashboard keeps its scroll position between visits (a previous case may have left it at the
+  # bottom, below the card), and the search below only scrolls DOWN: start from the top.
+  nuke_scroll_top
+  for ((i = 0; i < 8; i++)); do
+    ui_snapshot
+    xy="$(ui_xy prefix Nuke)"
+    if [[ -n "$xy" ]]; then
+      # shellcheck disable=SC2086
+      ash input tap $xy >/dev/null 2>&1
+      sleep 2
+      # A fresh install shows the first-run intro card on top; it pushes the header, chips and
+      # "Save as profile" below where the cases look (the release gate run failed on exactly that).
+      ui_snapshot
+      if ui_has "Got it"; then ui_tap_text "Got it" 4 >/dev/null 2>&1 || true; sleep 1; fi
+      scroll_to_text "Apps to nuke" 6 && return 0
+      fail "tapped the Nuke card but 'Apps to nuke' never appeared"
+      return 1
+    fi
+    ash input swipe 540 1500 540 700 300 >/dev/null 2>&1
+    sleep 1
+  done
+  fail "no Nuke card on the dashboard"
+  return 1
+}
+
+nuke_is_on() { ui_snapshot; ui_has_re 'Nuke is on · '; }
+
+# Filter the app list to $1 (types into the search box, the one EditText on the screen).
+nuke_search() { # label
+  local i y
+  # Bring the search box into the top half first. Reaching "Apps to nuke" leaves the box at or below
+  # the fold (the header, caption and chip row sit above it), and Compose puts no off-screen node in
+  # the dump: the box was either missing or the filtered rows under it were, so the row read as "not
+  # in the Nuke app list" on the bench.
+  for ((i = 0; i < 8; i++)); do
+    ui_snapshot
+    y="$(python3 - "$UI_XML" <<'PYEOF'
+import re
+import sys
+
+xml = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+for attrs in re.findall(r"<node([^>]*)>", xml):
+    if 'class="android.widget.EditText"' in attrs:
+        b = re.search(r'bounds="\[\d+,(\d+)\]\[\d+,(\d+)\]', attrs)
+        if b:
+            print((int(b.group(1)) + int(b.group(2))) // 2)
+            break
+PYEOF
+)"
+    [[ -n "$y" && "$y" -lt 1100 ]] && break
+    ash input swipe 540 1500 540 900 300 >/dev/null 2>&1
+    sleep 1
+  done
+  ui_tap_edittext 10 || { fail "no search field on the Nuke screen"; return 1; }
+  # The first word only ("Keep" for "Keep notes"): it is enough to filter the list, and a typed space
+  # is where the bench keyboard scrambled the text ("Keep notes" landed as "Keenotesp", which matched
+  # no app, emptied the list and clamped the scroll back up).
+  nuke_type_field "${1%% *}" || return 1
+  nuke_hide_keyboard
+}
+
+# The text of the first EditText in the last snapshot.
+nuke_field_text() {
+  python3 - "$UI_XML" <<'PYEOF'
+import re
+import sys
+
+xml = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+for attrs in re.findall(r"<node([^>]*)>", xml):
+    if 'class="android.widget.EditText"' in attrs:
+        t = re.search(r' text="([^"]*)"', attrs)
+        print(t.group(1) if t else "")
+        break
+PYEOF
+}
+
+# Types $1 into the focused field and CHECKS what landed, retrying up to 3 times. `adb input text`
+# goes through the keyboard, which can reorder characters on the bench; an unchecked typo turned into
+# a misleading "not in the list" failure two steps later.
+nuke_type_field() { # text
+  local want="$1" try i got=""
+  for ((try = 0; try < 3; try++)); do
+    ash input keyevent KEYCODE_MOVE_END >/dev/null 2>&1
+    for ((i = 0; i < 30; i++)); do ash input keyevent KEYCODE_DEL >/dev/null 2>&1; done
+    # One character per `input` call, not the whole string: sent in one burst the bench keyboard
+    # dropped and swapped letters ("Calendar" landed as "Calaren", "Keep notes" as "Keenotesp").
+    for ((i = 0; i < ${#want}; i++)); do
+      if [[ "${want:i:1}" == " " ]]; then
+        ash input keyevent KEYCODE_SPACE >/dev/null 2>&1
+      else
+        ash input text "${want:i:1}" >/dev/null 2>&1
+      fi
+    done
+    sleep 1
+    ui_snapshot
+    got="$(nuke_field_text)"
+    [[ "$got" == "$want" ]] && return 0
+  done
+  fail "typed '${want}' but the field reads '${got}'"
+  return 1
+}
+
+# Makes the row of $1 ticked (true) or unticked (false), and checks the dump agrees.
+nuke_set_ticked() { # label true|false
+  local label="$1" want="$2" now
+  nuke_search "$label" || return 1
+  ui_wait_text "$label" 8 || { fail "'${label}' is not in the Nuke app list"; return 1; }
+  now="$(python3 "${WORK}/uistate.py" checked "$UI_XML" "$label")"
+  if [[ "$now" != "$want" ]]; then
+    ui_tap_xy_mode boxxy "$label" 8 || return 1
+    sleep 1
+    ui_snapshot
+    now="$(python3 "${WORK}/uistate.py" checked "$UI_XML" "$label")"
+  fi
+  [[ "$now" == "$want" ]] || { fail "'${label}' should be ticked=${want} but the dump reads '${now}'"; return 1; }
+}
+
+nuke_read_ticked() { # label -> true|false|""
+  nuke_search "$1" || return 1
+  ui_wait_text "$1" 8 || return 1
+  python3 "${WORK}/uistate.py" checked "$UI_XML" "$1"
+}
+
+nuke_chip_selected() { # name -> true|false|""
+  nuke_scroll_top
+  ui_snapshot
+  python3 "${WORK}/uistate.py" selected "$UI_XML" "$1"
+}
+
+# "Save as profile" -> name -> Save (or Update when the name already exists). The link is hidden
+# while the list already IS a saved profile (round 1: saving would only duplicate it), which a re-run
+# meets when an earlier run left the same profile behind: that counts as saved.
+nuke_save_profile() { # name
+  local name="$1" i
+  nuke_scroll_top
+  ui_snapshot
+  if ! ui_has "Save as profile" && [[ "$(nuke_chip_selected "$name")" == true ]]; then
+    info "the list already is profile '${name}'"
+    return 0
+  fi
+  ui_tap_text "Save as profile" 10 || return 1
+  ui_tap_edittext 10 || { fail "no Name field in the save dialog"; return 1; }
+  nuke_type_field "$name" || return 1
+  nuke_hide_keyboard
+  ui_snapshot
+  if ui_has "Update"; then ui_tap_text "Update" 8 || return 1; else ui_tap_text "Save" 8 || return 1; fi
+  sleep 1
+}
+
+nuke_pair_key() { # pairs the QA key via fakescan when the Nuke screen offers it; no-op if a key exists
+  nuke_scroll_top
+  ui_snapshot
+  ui_has "Use a barcode I already have" || { info "a key is already paired; using it"; return 0; }
+  nuke_fakescan_set "$NUKE_QA_KEY"
+  ui_tap_text "Use a barcode I already have" 10 || return 1
+  ui_wait_re 'Paired\. Keep that code somewhere inconvenient\.' 20 || { fail "no 'Paired.' snackbar after the fake scan"; return 1; }
+  nuke_fakescan_clear
+}
+
+# Presses the scan button $1 ("Scan to end") with the QA key as the next scan result.
+nuke_scan_key() { # button
+  nuke_fakescan_set "$NUKE_QA_KEY"
+  nuke_tap "$1"
+}
+
+# Launch app $1 and wait for the Nuke overlay copy.
+nuke_assert_blocked() { # pkg
+  go_home
+  ash monkey -p "$1" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  if ui_wait_text "Nuked." 12; then
+    shot "nuke-overlay-$1"
+    go_home
+    return 0
+  fi
+  shot "nuke-overlay-MISSING-$1"
+  fail "launched ${1} but the 'Nuked.' overlay is not showing"
+  go_home
+  return 1
+}
+
+nuke_preflight() {
+  local p
+  for p in "$NUKE_APP_A_PKG" "$NUKE_APP_B_PKG"; do
+    [[ "$(launchable_state "$p")" == yes ]] || { fail "FIXTURE: ${p} is not a launchable app on this device (set NUKE_APP_A_PKG/_LABEL, NUKE_APP_B_PKG/_LABEL)"; return 1; }
+  done
+}
+
+# Nuke must be OFF before a case starts. qa build: reset. Debug: scan the key (works when no timer
+# is running). Otherwise there is nothing safe to do from here.
+nuke_ensure_off() {
+  nuke_open_screen || return 1
+  nuke_is_on || return 0
+  warn "Nuke is already ON entering the case"
+  if nuke_has_qa_receiver; then
+    nuke_qa_reset
+    nuke_open_screen || return 1
+  elif nuke_scan_available; then
+    nuke_scan_key "Scan to end"
+    ui_wait_re 'Nuke is off\.' 12 || true
+    nuke_fakescan_clear
+  fi
+  if nuke_is_on; then
+    fail "PRECONDITION: Nuke is on and could not be ended from here (timer running or a foreign key); end it in the app and re-run"
+    return 1
+  fi
+  return 0
+}
+
+# The saved profile names on the Nuke screen, one per line, read from each chip's content-desc
+# ("Profile <name>" or "Profile <name>, in use").
+nuke_profile_names() { # [xml]
+  grep -aoE 'content-desc="Profile [^"]*"' "${1:-$UI_XML}" | sed -E 's/^content-desc="Profile //; s/"$//; s/, in use$//'
+}
+
+# Deletes every saved profile (Nuke must be off). Part A needs a clean slate: "Save as profile" is
+# hidden while the list matches a saved profile, so a bench that already had a profile with the same
+# apps (pass 2 left "Focus" = Keep notes + Calendar) failed on "cannot tap 'Save as profile'".
+nuke_clear_profiles() {
+  local name i
+  for ((i = 0; i < 12; i++)); do       # 10 is the app's profile cap; 2 spare tries
+    nuke_scroll_top
+    ui_snapshot
+    name="$(nuke_profile_names | head -1)"
+    [[ -z "$name" ]] && return 0
+    if [[ "$(nuke_chip_selected "$name")" != true ]]; then
+      ui_tap_text "$name" 10 || return 1            # an unselected chip applies the profile first
+      sleep 1
+    fi
+    ui_tap_text "$name" 10 || return 1              # the selected chip opens Rename / Delete
+    ui_tap_text "Delete" 8 || return 1              # menu item
+    ui_wait_text "Cancel" 8 || { fail "no Delete dialog for profile '${name}'"; return 1; }
+    ui_tap_text "Delete" 8 || return 1              # dialog confirm
+    sleep 1
+  done
+  fail "profiles still on the Nuke screen after 12 deletes"
+  return 1
+}
+
+# ── nuke-profiles: save, switch and delete profiles; an edit during Nuke changes nothing blocked ──
+nuke_profiles_part_a() {
+  local a="$NUKE_APP_A_LABEL" b="$NUKE_APP_B_LABEL" v rc=0
+  nuke_clear_profiles || return 1
+  nuke_set_ticked "$a" true || return 1
+  nuke_set_ticked "$b" true || return 1
+  nuke_save_profile "Two" || return 1
+  nuke_set_ticked "$b" false || return 1
+  nuke_save_profile "One" || return 1
+  shot "nuke-profiles-saved"
+  nuke_scroll_top
+  ui_tap_text "Two" 10 || return 1
+  # shellcheck disable=SC1111  # curly quotes are the app's literal copy
+  ui_wait_re 'Switched to “Two”\.' 6 || { fail "no 'Switched to “Two”.' snackbar"; rc=1; }
+  v="$(nuke_read_ticked "$a")"; [[ "$v" == true ]] || { fail "after chip Two: '${a}' should be ticked (got '${v}')"; rc=1; }
+  v="$(nuke_read_ticked "$b")"; [[ "$v" == true ]] || { fail "after chip Two: '${b}' should be ticked (got '${v}')"; rc=1; }
+  v="$(nuke_chip_selected "Two")"; [[ "$v" == true ]] || { fail "chip Two should be selected (got '${v}')"; rc=1; }
+  ui_tap_text "One" 10 || return 1
+  v="$(nuke_read_ticked "$a")"; [[ "$v" == true ]] || { fail "after chip One: '${a}' should be ticked (got '${v}')"; rc=1; }
+  v="$(nuke_read_ticked "$b")"; [[ "$v" == false ]] || { fail "after chip One: '${b}' should be unticked (got '${v}')"; rc=1; }
+  v="$(nuke_chip_selected "One")"; [[ "$v" == true ]] || { fail "chip One should be selected (got '${v}')"; rc=1; }
+  return $rc
+}
+
+nuke_profiles_part_b() {
+  local rc=0
+  nuke_open_screen || return 1
+  nuke_pair_key || return 1
+  nuke_scroll_top
+  ui_tap_text "Two" 10 || return 1
+  # The lock choice is remembered across Nukes, so a bench left on "15 min" (by nuke-timer or by hand)
+  # made the key at the end of this part be refused, and the run hung there. This part ends with the
+  # key, so it starts with no lock.
+  nuke_scroll_top
+  nuke_timer_pick "None" || return 1
+  ui_tap_text "Nuke now" 10 || nuke_tap "Nuke now" || return 1
+  ui_wait_re 'Nuke is on · ' 12 || { fail "Nuke did not turn on"; return 1; }
+  nuke_scroll_top
+  ui_tap_text "Two" 10 || return 1                 # the SELECTED chip: opens Rename / Delete
+  ui_tap_text "Delete" 8 || return 1               # menu item
+  ui_wait_text "Cancel" 8 || { fail "no Delete dialog"; return 1; }
+  ui_tap_text "Delete" 8 || return 1               # dialog confirm
+  sleep 1
+  nuke_scroll_top
+  ui_snapshot
+  if ui_has "Two"; then fail "chip Two is still there after Delete"; rc=1; fi
+  nuke_assert_blocked "$NUKE_APP_B_PKG" || rc=1    # only in the deleted profile; still blocked
+  # Nuke has no timer here, so the key ends it.
+  nuke_open_screen || return 1
+  nuke_scan_key "Scan to end"
+  ui_wait_re 'Nuke is off\.' 12 || { fail "no 'Nuke is off.' after scanning the key"; rc=1; }
+  nuke_fakescan_clear
+  return $rc
+}
+
+case_nuke_profiles() {
+  local rc=0 scan=0
+  nuke_preflight || return 1
+  nuke_ensure_off || { nuke_fakescan_clear; return 1; }
+  nuke_profiles_part_a || rc=1
+  if nuke_scan_available; then
+    scan=1
+    nuke_profiles_part_b || rc=1
+  fi
+  nuke_fakescan_clear
+  go_home
+  if (( rc != 0 )); then CASE_NOTE="see the failures above"; return 1; fi
+  if (( scan == 0 )); then
+    CASE_NOTE="part A (save/switch profiles) passed; part B (delete during Nuke) SKIPPED: release build, debug.nudge.fakescan does nothing. Run with APK=debug to cover it"
+    return 77
+  fi
+  CASE_NOTE="profiles saved/switched; deleting the selected profile during Nuke left ${NUKE_APP_B_LABEL} blocked; Nuke ended with the key"
+  return 0
+}
+
+# ── nuke-timer: the "Lock code for" picker, and the key is refused while the code is locked ──────────────────────────
+nuke_timer_dropdown() { # opens the picker and checks the six options
+  local o rc=0
+  nuke_scroll_top
+  ui_snapshot
+  ui_has_re 'Lock code for: ' || { fail "no 'Lock code for' row on the Nuke screen"; return 1; }
+  ui_tap_xy_mode prefix "Lock code for: " 8 || return 1
+  ui_snapshot
+  for o in "None" "15 min" "30 min" "45 min" "1 hour" "2 hours"; do
+    ui_has "$o" || { fail "timer option '${o}' missing from the dropdown"; rc=1; }
+  done
+  shot "nuke-timer-dropdown"
+  return $rc
+}
+
+nuke_timer_choice() { ui_snapshot; grep -aoE 'content-desc="Lock code for: [^"]*"' "$UI_XML" | head -1 | sed 's/.*Lock code for: //; s/"$//'; }
+
+nuke_timer_pick() { # option; the dropdown must be closed
+  [[ "$(nuke_timer_choice)" == "$1" ]] && return 0
+  ui_tap_xy_mode prefix "Lock code for: " 8 || return 1
+  ui_tap_text "$1" 8 || return 1
+  [[ "$(nuke_timer_choice)" == "$1" ]] || { fail "timer did not change to '${1}'"; return 1; }
+}
+
+nuke_timer_scan_flow() {
+  local rc=0 a="$NUKE_APP_A_LABEL" waited=0
+  nuke_pair_key || return 1
+  nuke_set_ticked "$a" true || return 1
+  nuke_scroll_top
+  nuke_timer_pick "15 min" || return 1
+  ui_tap_text "Nuke now" 10 || nuke_tap "Nuke now" || return 1
+  ui_wait_re 'Nuke is on · ' 12 || { fail "Nuke did not turn on"; return 1; }
+  ui_has_re 'Code locked · .* left' || { fail "no 'Code locked · … left' line on the status card"; rc=1; }
+  nuke_scan_key "Scan to end" || rc=1
+  ui_wait_re 'Your code is locked for .*\. Scan again after that\.' 12 || { fail "the key was not refused while the code is locked"; rc=1; }
+  nuke_fakescan_clear
+  nuke_is_on || { fail "Nuke is no longer on after the refused scan"; rc=1; }
+  nuke_assert_blocked "$NUKE_APP_A_PKG" || rc=1
+  info "emergency-code path: not driven here (64 characters); covered by NukeViewModelTest / NukeGateTest"
+  if [[ "$NUKE_TIMER_WAIT" == 1 ]]; then
+    info "NUKE_TIMER_WAIT=1: waiting for the real 15-minute timer (up to 17 min)"
+    while (( waited < 1020 )); do
+      sleep 30; waited=$(( waited + 30 ))
+      nuke_open_screen || continue
+      # Once the lock runs out the card drops its "Code locked" line (no "done" line, round 1).
+      ui_has_re 'Code locked' || break
+    done
+    nuke_scan_key "Scan to end"
+    ui_wait_re 'Nuke is off\.' 12 || { fail "no 'Nuke is off.' after the timer ended and the key was scanned"; rc=1; }
+    nuke_fakescan_clear
+  fi
+  return $rc
+}
+
+case_nuke_timer() {
+  local rc=0 scan=0 left_on=0 how=""
+  nuke_preflight || return 1
+  nuke_ensure_off || { nuke_fakescan_clear; return 1; }
+  # The "Lock code for" row only shows once a code is paired. A debug build pairs the QA key; a fresh
+  # RELEASE install has no code and no scripted way to pair one (no fakescan), so it is a SKIP there,
+  # never a FAIL and never a silent pass.
+  if nuke_scan_available; then
+    nuke_open_screen || return 1
+    nuke_pair_key || { nuke_fakescan_clear; return 1; }
+  fi
+  nuke_scroll_top
+  ui_snapshot
+  if ! ui_has_re 'Lock code for: ' && ui_has "Pair a Nuke code first." && ! nuke_scan_available; then
+    go_home
+    CASE_NOTE="SKIPPED: no Nuke code paired on this release install, and a release build cannot pair one by script (the Lock code for row needs a code). Run with APK=debug"
+    return 77
+  fi
+  nuke_timer_dropdown || rc=1
+  ui_tap_text "None" 6 >/dev/null 2>&1 || true      # close the open menu on a known choice
+  if nuke_scan_available; then
+    scan=1
+    nuke_timer_scan_flow || rc=1
+    nuke_open_screen && nuke_is_on && left_on=1
+  fi
+  nuke_fakescan_clear
+  if (( left_on )); then
+    if nuke_has_qa_receiver; then
+      nuke_qa_reset
+      how="; ended via qa reset (also cleared rules/groups/history)"
+    else
+      warn "NUKE IS STILL ON (15-minute timer): wait it out, then scan the key (debug.nudge.fakescan=${NUKE_QA_KEY}, Scan to end), or use the emergency code in the app. NUKE_TIMER_WAIT=1 does this for you."
+      how="; NUKE LEFT ON (see warning)"
+    fi
+  fi
+  go_home
+  if (( rc != 0 )); then CASE_NOTE="see the failures above"; return 1; fi
+  if (( scan == 0 )); then
+    CASE_NOTE="timer dropdown (six options) passed; scan steps (key refused while the timer runs) SKIPPED: release build, debug.nudge.fakescan does nothing. Run with APK=debug to cover them"
+    return 77
+  fi
+  CASE_NOTE="key refused while the 15-minute timer ran, Nuke stayed on and ${NUKE_APP_A_LABEL} stayed blocked${how}"
+  return 0
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Driver
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2054,25 +3917,30 @@ usage() {
   # the usage text the moment the header gained a paragraph.
   awk 'NR>1 { if ($0 !~ /^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"
   printf 'cases:  %s\n' "${ALL_CASES[*]}"
-  printf 'group1: %s\ngroup2: %s\ngroup3: %s\n' "${GROUP1_CASES[*]}" "${GROUP2_CASES[*]}" "${GROUP3_CASES[*]}"
+  printf 'group1: %s\ngroup2: %s\ngroup3: %s\ngroup4: %s\ngroup5: %s\n' \
+    "${GROUP1_CASES[*]}" "${GROUP2_CASES[*]}" "${GROUP3_CASES[*]}" "${GROUP4_CASES[*]}" "${GROUP5_CASES[*]}"
+  printf 'group6: %s\n' "${GROUP6_CASES[*]}"
 }
 
-# Fails (exit 2) unless group1+group2+group3 are exactly ALL_CASES, in order — before the lock is
-# taken or the phone touched, so a case added to `all` and forgotten here costs one line, not a
+# Fails (exit 2) unless group1+group2+group3+group4+group5+group6 are exactly ALL_CASES, in order, before
+# the lock is taken or the phone touched, so a case added to `all` and forgotten here costs one line, not a
 # chunked gate that quietly stops running it.
 check_groups() {
-  local joined="${GROUP1_CASES[*]} ${GROUP2_CASES[*]} ${GROUP3_CASES[*]}"
+  local joined="${GROUP1_CASES[*]} ${GROUP2_CASES[*]} ${GROUP3_CASES[*]} ${GROUP4_CASES[*]} ${GROUP5_CASES[*]} ${GROUP6_CASES[*]}"
   [[ "$joined" == "${ALL_CASES[*]}" ]] ||
-    die "group1+group2+group3 [${joined}] must concatenate to ALL_CASES [${ALL_CASES[*]}]: a case was added or moved without placing it in a group"
+    die "group1+group2+group3+group4+group5+group6 [${joined}] must concatenate to ALL_CASES [${ALL_CASES[*]}]: a case was added or moved without placing it in a group"
 }
 
 # The cases a multi-case target runs, one per line; nonzero for anything else (a single case).
-target_cases() { # all | group1 | group2 | group3
+target_cases() { # all | group1 ... group6
   case "$1" in
     all)    printf '%s\n' "${ALL_CASES[@]}" ;;
     group1) printf '%s\n' "${GROUP1_CASES[@]}" ;;
     group2) printf '%s\n' "${GROUP2_CASES[@]}" ;;
     group3) printf '%s\n' "${GROUP3_CASES[@]}" ;;
+    group4) printf '%s\n' "${GROUP4_CASES[@]}" ;;
+    group5) printf '%s\n' "${GROUP5_CASES[@]}" ;;
+    group6) printf '%s\n' "${GROUP6_CASES[@]}" ;;
     *)      return 1 ;;
   esac
 }
@@ -2099,7 +3967,7 @@ main() {
   else
     # shellcheck disable=SC2076
     [[ " ${ALL_CASES[*]} " == *" ${target} "* ]] ||
-      die "unknown case '${target}'. Try: ${ALL_CASES[*]} — or all, group1, group2, group3"
+      die "unknown case '${target}'. Try: ${ALL_CASES[*]} — or all, group1, group2, group3, group4, group5, group6"
     cases=("$target")
     # Every case but `setup` assumes the fixtures `setup` creates, so a single case
     # runs against whatever is on the phone. That is deliberate (it is how you iterate
@@ -2115,6 +3983,7 @@ main() {
   crash_baseline "$series"
   mkdir -p "$ALBUM"
   write_locator
+  write_ui_state
   start_sampler
   info "album: ${ALBUM}"
   info "work:  ${WORK}"

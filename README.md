@@ -31,6 +31,7 @@
 
 ---
 ## Play Store Download: [Play Store Here](https://play.google.com/store/apps/details?id=dev.astraedus.nudge&hl=en_AU)
+## F-Droid Download: [F-Droid Here](https://f-droid.org/packages/dev.astraedus.nudge/)
 
 <a href="https://www.saashub.com/nudge-adhd-app-blocker?utm_source=badge"><img src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1" alt="Nudge - ADHD App Blocker | Featured on SaaSHub" width="150"></a>
 
@@ -66,6 +67,8 @@ Nudge is open source, requests zero internet permissions, and keeps all your dat
 
 - **Delay-to-open** -- Before opening a blocked app, you wait through a breathing exercise or countdown timer. Not a hard lock -- a moment of friction that breaks the autopilot habit loop. This is the feature no other open-source blocker has.
 - **Hard blocking** -- Completely block apps you don't want to access at all.
+- **Mirror mode** -- Instead of a block screen, the wait shows you your own face through the front camera. Same wait times and exits as Delay. Preview only, never recorded or saved; without the camera it falls back to the normal countdown.
+- **Camera on block screens** -- An optional switch in Settings puts your front camera behind every block screen, so you see yourself instead of a plain screen when you get kept out.
 - **Daily time budgets** -- Allow 30 minutes of Instagram per day, then block. You choose the limit.
 - **App groups** -- Create a "Social Media" group, configure once, apply to all.
 
@@ -106,6 +109,10 @@ Uses Accessibility Service to detect in-app navigation to these screens.
 ## Install
 
 **Android:** Nudge is on the [Google Play Store](https://play.google.com/store/apps/details?id=dev.astraedus.nudge&hl=en_AU). No account, no sign-in, no internet permission.
+
+**F-Droid:** Nudge is also on [F-Droid](https://f-droid.org/packages/dev.astraedus.nudge/), built by F-Droid from this source. A new release reaches F-Droid a few days after it lands here.
+
+<a href="https://f-droid.org/packages/dev.astraedus.nudge/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80"></a>
 
 ### Download APK
 Prefer installing outside Play? Download the latest APK from [**Releases**](https://github.com/astraedus/nudge/releases) and sideload it.
@@ -148,7 +155,7 @@ Nudge requires three permissions. Here's exactly what each does and why:
 | **Display Over Other Apps** | Shows the block/delay overlay on top of blocked apps | Nothing. It's a display permission. |
 | **Usage Stats** | Tracks your daily screen time per app for time budgets | App usage durations. Stored locally in a Room database on your device. |
 
-No internet permission. No camera. No contacts. No location. No storage.
+No internet permission. No contacts. No location. No storage. The camera is used only if you turn on Mirror mode or the block-screen camera, and only as a live preview: nothing is recorded or saved.
 
 ## Tech stack
 
@@ -167,7 +174,7 @@ No internet permission. No camera. No contacts. No location. No storage.
 
 ## Roadmap
 
-- [x] App blocking (hard block, delay, breathing)
+- [x] App blocking (hard block, delay, hold, breathing, mirror)
 - [x] Per-app daily time budgets & app groups
 - [x] In-app blocking (Reels, Shorts, TikTok For You)
 - [ ] Reliable Instagram Home feed / Explore detection on every device (tab state is unreadable on some newer devices and builds, [#18](https://github.com/astraedus/nudge/issues/18))

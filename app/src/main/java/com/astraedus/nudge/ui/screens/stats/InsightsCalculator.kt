@@ -378,6 +378,7 @@ class InsightsCalculator @Inject constructor() {
         "DELAY" -> UiText.of(R.string.components_block_mode_delay)
         "HOLD" -> UiText.of(R.string.components_block_mode_hold)
         "BREATHING" -> UiText.of(R.string.components_block_mode_breathing)
+        "MIRROR" -> UiText.of(R.string.components_block_mode_mirror)
         else -> UiText.of(R.string.stats_mode_other)
     }
 

@@ -52,6 +52,7 @@
     <string name="components_block_mode_delay">Затримка</string>
     <string name="components_block_mode_hold">Утримання</string>
     <string name="components_block_mode_breathing">Дихальна пауза</string>
+    <string name="components_block_mode_mirror">Дзеркало</string>
     <string name="components_block_mode_short_hard_block">Повне</string>
     <string name="components_block_mode_short_breathing">Дихання</string>
     <string name="components_block_mode_desc_none">Не заблоковано.</string>
@@ -60,6 +61,8 @@
     <string name="components_block_mode_desc_delay">Показує таймер зворотного відліку, перш ніж пустити вас. Дає час передумати.</string>
     <string name="components_block_mode_desc_hold">Кнопку потрібно утримувати весь час очікування. Відпустите — і відлік почнеться знову.</string>
     <string name="components_block_mode_desc_breathing">Перед відкриттям проводить вас крізь дихальну вправу. Вгамовує імпульс.</string>
+    <string name="components_block_mode_desc_mirror_one">Показує вашу фронтальну камеру на час очікування, перш ніж відкриється застосунок.</string>
+    <string name="components_block_mode_desc_mirror_many">Показує вашу фронтальну камеру на час очікування, перш ніж відкриються ці застосунки.</string>
 
     <string name="components_category_social">Соцмережі та спілкування</string>
     <string name="components_category_video">Фільми та відео</string>
@@ -138,6 +141,7 @@
     <string name="components_summary_mode_delay">Затримка %1$d с</string>
     <string name="components_summary_mode_hold">Утримання %1$d с</string>
     <string name="components_summary_mode_breathing">Дихальна пауза %1$d с</string>
+    <string name="components_summary_mode_mirror">Дзеркало %1$d с</string>
     <string name="components_summary_feature_mode">%1$s: %2$s</string>
     <string name="components_summary_limit_minutes">Ліміт %1$d хв</string>
     <string name="components_summary_every_day">Щодня %1$s</string>
@@ -168,4 +172,7 @@
         <item quantity="many">%1$s · %2$d застосунків</item>
         <item quantity="other">%1$s · %2$d застосунку</item>
     </plurals>
+
+    <!-- Режим «Дзеркало» -->
+    <string name="components_mirror_camera_off_note">Доступ до камери вимкнено, тож замість дзеркала показується зворотний відлік.</string>
 </resources>

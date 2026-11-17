@@ -18,17 +18,20 @@ import com.astraedus.nudge.data.db.entity.UsageEvent
 import com.astraedus.nudge.data.preferences.NudgePreferences
 import com.astraedus.nudge.data.repository.BlockRuleRepository
 import com.astraedus.nudge.data.repository.FirstUnlockStateCache
+import com.astraedus.nudge.data.repository.InstalledAppsRepository
 import com.astraedus.nudge.data.repository.RuleSnapshotSource
 import com.astraedus.nudge.data.repository.UsageRepository
 import com.astraedus.nudge.domain.WebDomainMatcher
 import com.astraedus.nudge.domain.engine.BrowserRouting
 import com.astraedus.nudge.domain.engine.CoverageFacts
 import com.astraedus.nudge.domain.packages.PackageFacts
+import com.astraedus.nudge.domain.engine.ScheduleBoundaries
 import com.astraedus.nudge.domain.engine.ScheduleEvaluator
 import com.astraedus.nudge.domain.engine.FirstUnlockWindow
 import com.astraedus.nudge.domain.engine.WholeAppCoverage
 import com.astraedus.nudge.domain.block.BlockLaunchGate
 import com.astraedus.nudge.domain.autokick.UseReminder
+import com.astraedus.nudge.domain.bounce.AppCountability
 import com.astraedus.nudge.domain.bounce.BounceAlert
 import com.astraedus.nudge.domain.bounce.BounceDetector
 import com.astraedus.nudge.domain.block.CooldownGate
@@ -43,7 +46,6 @@ import com.astraedus.nudge.domain.sitting.SittingEvent
 import com.astraedus.nudge.domain.sitting.endedSitting
 import com.astraedus.nudge.domain.model.BlockDecision
 import com.astraedus.nudge.domain.model.BlockMode
-import com.astraedus.nudge.domain.model.WebBlockMode
 import com.astraedus.nudge.domain.pip.PipEscapeLedger
 import com.astraedus.nudge.domain.surfaces.FollowingSteer
 import com.astraedus.nudge.domain.surfaces.HostSurface
@@ -115,9 +117,12 @@ class NudgeAccessibilityService : AccessibilityService() {
         fun blockLaunchGuard(): BlockLaunchGuard
         fun essentialApps(): EssentialApps
         fun ruleSnapshotSource(): RuleSnapshotSource
+        fun installedAppsRepository(): InstalledAppsRepository
         fun scheduleEvaluator(): ScheduleEvaluator
+        fun scheduleBoundaries(): ScheduleBoundaries
         fun packageFacts(): PackageFacts
         fun firstUnlockStateCache(): FirstUnlockStateCache
+        fun nukeTimerCheckpoint(): NukeTimerCheckpoint
     }
 
     /**
@@ -348,7 +353,7 @@ class NudgeAccessibilityService : AccessibilityService() {
          * settings excursion. The rest are defence in depth against an OEM declaring a home filter
          * on a system-surface package.
          */
-        private val NEVER_LAUNCHER_PACKAGES = setOf(
+        internal val NEVER_LAUNCHER_PACKAGES = setOf(
             "com.android.settings",
             "com.android.systemui",
             "com.android.packageinstaller",
@@ -564,20 +569,44 @@ class NudgeAccessibilityService : AccessibilityService() {
      * two "Nudge stopped this app" points, [launchBlockOverlay] and the auto-kick. Its on/off switch
      * is cached inside it, collected in [onServiceConnected]; while off, neither feed does any work.
      * In memory only: a process death forgets a streak, which is the right direction for a nudge.
+     *
+     * Only an app counts (#181): [bounceCountability] answers from cached package facts, and a miss
+     * is read on [serviceScope] (IO), never here on the event thread, then re-checked.
      */
     private val bounceCheckIn = BounceCheckIn(
         detector = BounceDetector(
-            excludedPackages = BounceDetector.neverCountedPackages(BuildConfig.APPLICATION_ID)
+            excludedPackages = BounceDetector.neverCountedPackages(BuildConfig.APPLICATION_ID),
+            countability = { pkg -> bounceCountability(pkg) },
+            onNotCounted = { pkg, why -> eventTrace.bounceSkip(pkg, why) }
         ),
         notify = { alert ->
             val unit = if (alert.unit == BounceAlert.Unit.SITES) "sites" else "apps"
             log.i(
                 "bounce check-in posted $unit=${alert.count} minutes=${alert.minutes}"
             )
+            eventTrace.bounce(alert)
             BounceCheckInNotifier.notify(applicationContext, alert)
         },
         clock = { android.os.SystemClock.elapsedRealtime() }
     )
+
+    /**
+     * "Is this an app the user opened?" for the bounce count (#181): launchable and not a home
+     * screen, from the cached facts plus [launcherPackagesCached]. A cache miss answers "not known
+     * yet" and reads the facts here on IO; when they land, the streak is re-checked.
+     */
+    private val bounceCountability: AppCountability by lazy {
+        AppCountability(
+            facts = entryPoint.packageFacts(),
+            homePackages = { launcherPackagesCached },
+            requestLookup = { pkg ->
+                serviceScope.launch {
+                    entryPoint.packageFacts().factsFor(pkg)
+                    if (bounceCountability.lookupFinished(pkg)) bounceCheckIn.onFactsLanded()
+                }
+            }
+        )
+    }
 
     /**
      * The whole-phone pause (issue #123). A Handler, not an alarm or WorkManager: the pause only
@@ -912,6 +941,35 @@ class NudgeAccessibilityService : AccessibilityService() {
                 hideAllOverlays()
                 // The whole-phone session banks its screen-on time and stops its clock (#123).
                 phoneNudge.onScreenOff()
+                // A running Nuke timer banks its time too (#184), so a later hard power-off
+                // loses only what came after this.
+                serviceScope.launch { nukeTimerCheckpoint.checkpoint() }
+            }
+        }
+    }
+
+    private val nukeTimerCheckpoint by lazy { entryPoint.nukeTimerCheckpoint() }
+
+    /**
+     * A clean shutdown or reboot banks a running Nuke timer's time (#184): after a reboot only the
+     * banked time carries over ([com.astraedus.nudge.domain.nuke.NukeTimer]). Registered-only, like
+     * [screenOffReceiver]: the shutdown broadcast is sent to runtime receivers only.
+     *
+     * [goAsync] because the write is a DataStore edit on [serviceScope]; the system waits for a
+     * shutdown receiver to finish (for a few seconds at most) before powering off.
+     */
+    private val shutdownReceiver by lazy {
+        object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: Intent?) {
+                if (intent?.action != Intent.ACTION_SHUTDOWN) return
+                val pending = goAsync()
+                serviceScope.launch {
+                    try {
+                        nukeTimerCheckpoint.checkpoint()
+                    } finally {
+                        pending.finish()
+                    }
+                }
             }
         }
     }
@@ -937,10 +995,14 @@ class NudgeAccessibilityService : AccessibilityService() {
                         val locked = isKeyguardLockedNow()
                         log.d("phone nudge screen on locked=$locked")
                         if (!locked) phoneNudge.onUnlocked()
+                        // The boundary timer ran on uptime while the screen was off (#169).
+                        boundaryWatch.onScreenOn()
                     }
                     Intent.ACTION_USER_PRESENT -> {
                         log.i("phone nudge unlock")
                         phoneNudge.onUnlocked()
+                        // A boundary crossed behind the lock screen is re-checked now (#169).
+                        boundaryWatch.onUnlocked()
                         logFirstUnlockEvidence(source = "user_present")
                         val now = System.currentTimeMillis()
                         // The decision that writes is the cache's, against the PERSISTED anchor:
@@ -963,6 +1025,57 @@ class NudgeAccessibilityService : AccessibilityService() {
      * a delivery wrote the anchor or kept a fresh one.
      */
     private val firstUnlockState by lazy { entryPoint.firstUnlockStateCache() }
+
+    /**
+     * ONE timer to the next instant a rule's answer changes by the clock alone (#169): a window
+     * starts or ends, or a daily limit's day rolls over. At it the app in front is looked at again
+     * ([recheckForegroundAtBoundary]), which is the only way a block can START over an app the user
+     * is sitting still in. A main-looper Handler on its own token, no alarm and no permission, and
+     * no timer at all when no rule has a clock (#63); why, and what it does about Doze, is in
+     * [ScheduleBoundaryWatch]'s KDoc.
+     *
+     * `by lazy`, not lateinit, so the teardown step that cancels it can never throw on a service
+     * that never connected.
+     */
+    private val boundaryWatch by lazy {
+        ScheduleBoundaryWatch(
+            scheduler = HandlerScheduler(),
+            wallClock = { System.currentTimeMillis() },
+            nextBoundary = { nowMs ->
+                val rules = entryPoint.ruleSnapshotSource().snapshot.value?.ruleData
+                if (!globalEnabledCached || rules == null) {
+                    null
+                } else {
+                    entryPoint.scheduleBoundaries().next(
+                        rules,
+                        java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
+                    )
+                }
+            },
+            deviceReady = { isPastKeyguardNow() },
+            onBoundary = { recheckForegroundAtBoundary() },
+            logger = entryPoint.nudgeLogger()
+        )
+    }
+
+    /**
+     * The wall clock, the timezone or the date changed: every schedule reads the local wall clock,
+     * so the boundary timer re-checks the app in front and re-arms from the new time (#169).
+     * Runtime-registered beside [unlockReceiver], because only a live service can act on them.
+     */
+    private val timeChangeReceiver by lazy {
+        object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: Intent?) {
+                val reason = when (intent?.action) {
+                    Intent.ACTION_TIME_CHANGED -> "time_set"
+                    Intent.ACTION_TIMEZONE_CHANGED -> "timezone_changed"
+                    Intent.ACTION_DATE_CHANGED -> "date_changed"
+                    else -> return
+                }
+                boundaryWatch.onClockChanged(reason)
+            }
+        }
+    }
 
     /**
      * The fallback anchor (spec 5.3, #109): an app window in front while the device is past the
@@ -1598,6 +1711,12 @@ class NudgeAccessibilityService : AccessibilityService() {
             log.w("failed to register screen-off receiver", e)
         }
         try {
+            registerReceiver(shutdownReceiver, android.content.IntentFilter(Intent.ACTION_SHUTDOWN))
+        } catch (e: Exception) {
+            // Degrades to the screen-off checkpoint alone: a timer that runs longer, never shorter.
+            log.w("failed to register shutdown receiver", e)
+        }
+        try {
             registerReceiver(
                 unlockReceiver,
                 android.content.IntentFilter().apply {
@@ -1607,6 +1726,19 @@ class NudgeAccessibilityService : AccessibilityService() {
             )
         } catch (e: Exception) {
             log.w("failed to register unlock receiver", e)
+        }
+        try {
+            registerReceiver(
+                timeChangeReceiver,
+                android.content.IntentFilter().apply {
+                    addAction(Intent.ACTION_TIME_CHANGED)
+                    addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                    addAction(Intent.ACTION_DATE_CHANGED)
+                }
+            )
+        } catch (e: Exception) {
+            // Degrades to re-arming at the next rule change, screen-on or boundary, never to a block.
+            log.w("failed to register time change receiver", e)
         }
         try {
             (getSystemService(android.content.Context.CAMERA_SERVICE) as
@@ -1628,7 +1760,11 @@ class NudgeAccessibilityService : AccessibilityService() {
             firstUnlockState.stamp.collect { stamp ->
                 if (FirstUnlockWindow.stampChanged(previous, stamp)) {
                     previous = stamp
-                    withContext(Dispatchers.Main) { reevaluateForegroundForFirstUnlock() }
+                    withContext(Dispatchers.Main) {
+                        reevaluateForegroundForFirstUnlock()
+                        // A first-unlock window's END moved with its anchor (#170).
+                        boundaryWatch.rearm("first_unlock")
+                    }
                 }
             }
         }
@@ -1652,6 +1788,10 @@ class NudgeAccessibilityService : AccessibilityService() {
                 val wasEnabled = globalEnabledCached
                 globalEnabledCached = enabled
                 if (wasEnabled && !enabled) onGlobalDisabled()
+                // Nudge off means no boundary timer at all; on, it arms from the rules (#169).
+                withContext(Dispatchers.Main) {
+                    if (enabled) boundaryWatch.rearm("global_on") else boundaryWatch.cancel()
+                }
                 // The monitor service's existence must track the master toggle, not track whether
                 // the phone has rebooted since install. It is also what tells the user when the OS
                 // has stopped THIS service, so it has to be running whenever Nudge is on.
@@ -1689,6 +1829,15 @@ class NudgeAccessibilityService : AccessibilityService() {
                     "phone nudge enabled=${config.enabled} threshold=${config.thresholdMinutes} " +
                         "pause=${config.firstPauseSeconds}"
                 )
+            }
+        }
+
+        // The boundary timer follows the rules (#169): every snapshot (an edit, an import, a group
+        // change, the cold-start read) re-arms it to the earliest boundary of the rules as they are
+        // now. Main, because the timer and the re-check it posts are main-thread only.
+        serviceScope.launch {
+            entryPoint.ruleSnapshotSource().snapshot.collect { snapshot ->
+                if (snapshot != null) withContext(Dispatchers.Main) { boundaryWatch.rearm("rules") }
             }
         }
 
@@ -1807,6 +1956,29 @@ class NudgeAccessibilityService : AccessibilityService() {
         val front = activeWindowPackageOrNull() ?: return
         if (front == packageName || front !in newlyNuked) return
         log.i("nuke started over the app in front package=$front")
+        lastEvalTime = 0L
+        evaluateForegroundPackage(front)
+    }
+
+    /**
+     * A schedule boundary was crossed (#169): a window started or ended, or a daily limit's day
+     * rolled over, while the user sat in an app that produces no window event of its own. Same shape
+     * as [reevaluateForegroundForNuke], and on purpose: the debounce is spent and the arrival goes
+     * through [evaluateForegroundPackage] like any other, so the launch gate, the row and EVERY
+     * grant are the ordinary ones. A pass earned before the boundary (a completed delay, the daily
+     * 2-minute pass, a cooldown) is honoured by `grantLetsThrough` there, exactly as on a window
+     * event: a schedule starting ends a sitting that holds no grant, and never takes one away
+     * (groups spec 534-537). Gated by [ScheduleBoundaryWatch.recheckTarget]: a block screen that is
+     * up owns its own end (`BlockOverlayActivity.scheduleBlockEnd`).
+     */
+    private fun recheckForegroundAtBoundary() {
+        val front = ScheduleBoundaryWatch.recheckTarget(
+            globalEnabled = globalEnabledCached,
+            overlayActive = isOverlayActive,
+            frontPackage = activeWindowPackageOrNull(),
+            ownPackage = packageName
+        ) ?: return
+        log.i("schedule boundary re-check package=$front")
         lastEvalTime = 0L
         evaluateForegroundPackage(front)
     }
@@ -3668,6 +3840,8 @@ class NudgeAccessibilityService : AccessibilityService() {
                         putExtra(BlockOverlayActivity.EXTRA_DAILY_LIMIT_MINUTES, it)
                     }
                     decision.until?.let { putExtra(BlockOverlayActivity.EXTRA_UNTIL, it) }
+                    // When the block ends by the clock (#170): the screen closes itself then.
+                    decision.endsAt?.let { putExtra(BlockOverlayActivity.EXTRA_ENDS_AT, it) }
                     decision.allApps?.let {
                         putExtra(
                             BlockOverlayActivity.EXTRA_ALL_APPS_EXCEPT_PACKAGES,
@@ -3895,26 +4069,26 @@ class NudgeAccessibilityService : AccessibilityService() {
     }
 
     private suspend fun loadCounterCacheEntries(): Map<String, CounterCacheEntry> {
-        val rules = entryPoint.blockRuleRepository().getEnabledRules().first()
-        // Which rules put a package in the cache, and with what, is `CounterCacheRefresher.appEntryFor`
-        // (pure, `CounterCacheRefresherMergeTest`): its predicate is DERIVED from
-        // `CounterCacheEntry.needsForegroundTimeTick`, so a new clock consumer (the usage reminder,
-        // #77, was the fourth) cannot be filtered out here before the clock is ever asked about it.
-        val appEntries = rules.mapNotNull(CounterCacheRefresher::appEntryFor)
-
-        // A rule's websites are tracked under their own keys, so a kick or a cooldown lands on the
-        // site rather than on the whole browser. Gated on the resolved WEB mode (#21), never the
-        // app-level one: a rule that blocks nothing on the web must not eject anyone from it.
-        val webEntries = rules.flatMap { rule ->
-            CounterCacheRefresher.webEntriesFor(
-                webDomains = rule.webDomains,
-                webEnforces = WebBlockMode.resolve(rule.mode, rule.webBlockMode) != BlockMode.NONE,
-                autoKickAfterMinutes = rule.autoKickAfterMinutes,
-                autoKickCooldownSeconds = rule.autoKickCooldownSeconds
-            )
-        }
-
-        return CounterCacheRefresher.mergeEntries(appEntries + webEntries)
+        // Which packages get an entry, and with what, is `CounterCacheCoverage` (pure,
+        // `CounterCacheGroupEntriesTest` + `CounterCacheCoverageDriftTest`): every app ANY enabled
+        // rule covers, group and All apps rules included (#146), asked of the same resolver and the
+        // same snapshot block evaluation reads, so the clock runs for exactly the apps whose
+        // evaluation finds the rule. The per-rule predicate is still DERIVED from
+        // `CounterCacheEntry.needsForegroundTimeTick` (`CounterCacheRefresher.entryFor`), so a new
+        // clock consumer cannot be filtered out here. Website entries are unchanged: keyed per site,
+        // gated on the resolved WEB mode (#21).
+        //
+        // The device lists are read only when a rule that wants an entry can reach past its own
+        // package (a group, a category group, All apps); all three are in-memory caches once warm.
+        val essentials = entryPoint.essentialApps()
+        return CounterCacheCoverage.load(
+            snapshot = entryPoint.ruleSnapshotSource().current(),
+            readLaunchable = {
+                entryPoint.installedAppsRepository().getInstalledApps().associate { it.packageName to it.category }
+            },
+            readEssentials = { essentials.current() },
+            readBrowsers = { essentials.browsers() }
+        )
     }
 
     override fun onInterrupt() {}
@@ -3954,6 +4128,9 @@ class NudgeAccessibilityService : AccessibilityService() {
         }
         teardown.step("unregister_screen_off_receiver") { unregisterReceiver(screenOffReceiver) }
         teardown.step("unregister_unlock_receiver") { unregisterReceiver(unlockReceiver) }
+        teardown.step("unregister_shutdown_receiver") { unregisterReceiver(shutdownReceiver) }
+        teardown.step("unregister_time_change_receiver") { unregisterReceiver(timeChangeReceiver) }
+        teardown.step("cancel_schedule_boundary_watch") { boundaryWatch.cancel() }
         teardown.step("phone_nudge_stop") {
             phoneNudgeHandler.removeCallbacks(phoneNudgeRunnable)
             phoneNudge.reset()

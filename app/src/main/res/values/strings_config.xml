@@ -26,6 +26,7 @@
     <string name="config_mode_delay">Delay</string>
     <string name="config_mode_hold">Hold</string>
     <string name="config_mode_breathing">Breathing</string>
+    <string name="config_mode_mirror">Mirror</string>
     <string name="config_tab_vanish_title">Hide the %1$s tab</string>
     <string name="config_tab_vanish_description">While %1$s is blocked, Nudge covers the %1$s tab in %2$s\'s bottom bar, so the icon is not there and tapping it does nothing. The rest of %2$s works as normal.</string>
     <string name="config_following_title">Open to Following instead of Home</string>

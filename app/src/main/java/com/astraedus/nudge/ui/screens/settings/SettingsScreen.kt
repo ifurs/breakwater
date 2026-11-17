@@ -508,6 +508,10 @@ fun SettingsScreen(
                 modifier = Modifier.clickable(onClick = onNavigateToMessagesEditor)
             )
 
+            // Not a protection setting (only a picture behind the block screen), so Strict Mode
+            // does not gate it in either direction.
+            BlockScreenCameraRow(preferences)
+
             // The same picker as the block screen's bubble, findable without being blocked first.
             RedirectAppSettingsRow(redirectAppViewModel.controller)
 
