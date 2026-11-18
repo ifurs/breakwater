@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.R
 import android.annotation.SuppressLint
 import android.content.Context
@@ -323,9 +324,9 @@ class TabCoverOverlayManager @Inject constructor(
     /** Never empty: an unlabelled region is the thing this exists to avoid. */
     private fun describeCover(ctx: Context, label: String): String =
         if (label.isBlank()) {
-            ctx.getString(R.string.service_cover_blocked_by_nudge)
+            ctx.withAppLocale().getString(R.string.service_cover_blocked_by_nudge)
         } else {
-            ctx.getString(R.string.service_cover_tab_blocked_by_nudge, label)
+            ctx.withAppLocale().getString(R.string.service_cover_tab_blocked_by_nudge, label)
         }
 
     /**

@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.R
 import android.annotation.SuppressLint
 import android.content.Context
@@ -223,18 +224,18 @@ class FloatingWindowCoverManager(
             // Consume every touch that reaches the scrim. The button below is a child, so it gets
             // its own tap first.
             root.setOnTouchListener { _, _ -> true }
-            root.contentDescription = ctx.getString(R.string.service_cover_blocked_by_nudge)
+            root.contentDescription = ctx.withAppLocale().getString(R.string.service_cover_blocked_by_nudge)
             root.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
 
             val title = AwarenessOverlayWindow.Label(ctx)
-            title.text = ctx.getString(R.string.service_cover_blocked_by_nudge)
+            title.text = ctx.withAppLocale().getString(R.string.service_cover_blocked_by_nudge)
             title.setTextColor(TEXT)
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
             title.gravity = Gravity.CENTER
             root.addView(title)
 
             val body = AwarenessOverlayWindow.Label(ctx)
-            body.text = ctx.getString(R.string.service_cover_floating_body)
+            body.text = ctx.withAppLocale().getString(R.string.service_cover_floating_body)
             body.setTextColor(MUTED)
             body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             body.gravity = Gravity.CENTER
@@ -242,7 +243,7 @@ class FloatingWindowCoverManager(
             root.addView(body)
 
             val close = AwarenessOverlayWindow.Label(ctx)
-            close.text = ctx.getString(R.string.service_cover_close_window)
+            close.text = ctx.withAppLocale().getString(R.string.service_cover_close_window)
             close.setTextColor(TEXT)
             close.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             close.gravity = Gravity.CENTER

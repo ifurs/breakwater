@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -36,25 +37,25 @@ object ProtectionAlertNotifier {
 
         val (title, body) = when (fault) {
             ProtectionFault.ACCESSIBILITY_DISABLED ->
-                context.getString(R.string.protection_alert_accessibility_title) to
-                    context.getString(R.string.protection_alert_accessibility_body)
+                context.withAppLocale().getString(R.string.protection_alert_accessibility_title) to
+                    context.withAppLocale().getString(R.string.protection_alert_accessibility_body)
 
             // Different recovery, so different copy. This user's Accessibility toggle still reads
             // "on" — telling them to turn it on would read as nonsense and they would give up.
             ProtectionFault.ACCESSIBILITY_CRASHED ->
-                context.getString(R.string.protection_alert_crashed_title) to
-                    context.getString(R.string.protection_alert_crashed_body)
+                context.withAppLocale().getString(R.string.protection_alert_crashed_title) to
+                    context.withAppLocale().getString(R.string.protection_alert_crashed_body)
 
             ProtectionFault.MONITOR_SERVICE_DEAD ->
-                context.getString(R.string.protection_alert_service_title) to
-                    context.getString(R.string.protection_alert_service_body)
+                context.withAppLocale().getString(R.string.protection_alert_service_title) to
+                    context.withAppLocale().getString(R.string.protection_alert_service_body)
 
             // Different recovery again, and the one recovery the user can definitely perform:
             // this phone is refusing every restart we attempt, and the overlay permission is what
             // lifts that refusal. Telling this user about battery settings would be a dead end.
             ProtectionFault.MONITOR_START_BLOCKED ->
-                context.getString(R.string.protection_alert_blocked_title) to
-                    context.getString(R.string.protection_alert_blocked_body)
+                context.withAppLocale().getString(R.string.protection_alert_blocked_title) to
+                    context.withAppLocale().getString(R.string.protection_alert_blocked_body)
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -115,10 +116,10 @@ object ProtectionAlertNotifier {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.protection_alert_channel_name),
+            context.withAppLocale().getString(R.string.protection_alert_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = context.getString(R.string.protection_alert_channel_description)
+            description = context.withAppLocale().getString(R.string.protection_alert_channel_description)
         }
         context.getSystemService(NotificationManager::class.java)
             ?.createNotificationChannel(channel)

@@ -1,5 +1,7 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.appLocaleTag
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.ui.text.resolve
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,6 +10,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -28,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -238,6 +242,16 @@ class NudgeMonitorService : Service() {
      */
     private var lastSeenConnectionGeneration: Int = Int.MIN_VALUE
     private var lastSeenGlobalEnabled: Boolean? = null
+    private var lastSeenLocaleTag: String? = null
+
+    /** Wakes the poll when the app language changes (see [onConfigurationChanged]). */
+    private val localeChanged = MutableStateFlow(0)
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Cheap and best-effort: the 5-minute poll catches it anyway where this is not delivered.
+        if (appLocaleTag() != lastSeenLocaleTag) localeChanged.value++
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -259,7 +273,7 @@ class NudgeMonitorService : Service() {
         // means it costs a post only when it WAS wrong.
         val startupCopy = ServiceHealth.ACTIVE.notificationCopy()
         startForeground(NOTIFICATION_ID, buildStatusNotification(startupCopy))
-        notificationGate.onPosted(startupCopy)
+        notificationGate.onPosted(startupCopy, appLocaleTag())
         isRunning = true
         startHealthPoll()
         return START_STICKY
@@ -311,6 +325,9 @@ class NudgeMonitorService : Service() {
                     .map { },
                 entryPoint.nudgePreferences().isGlobalEnabled
                     .filter { it != lastSeenGlobalEnabled }
+                    .map { },
+                localeChanged
+                    .filter { appLocaleTag() != lastSeenLocaleTag }
                     .map { }
             ).first()
         }
@@ -365,13 +382,18 @@ class NudgeMonitorService : Service() {
         // unaffected, so re-posting would buy nothing and would be exactly the every-few-seconds
         // resurrection the reporter complained about. It comes back on the next real state change.
         val copy = health.notificationCopy()
-        if (notificationGate.shouldPost(copy)) {
+        // The language is part of what is on screen: the copy is the same ids in English and in
+        // Ukrainian, so a per-app language change must count as a change or the notification keeps
+        // the old language until the health itself moves.
+        val localeTag = appLocaleTag()
+        lastSeenLocaleTag = localeTag
+        if (notificationGate.shouldPost(copy, localeTag)) {
             val manager = getSystemService(NotificationManager::class.java)
             if (manager != null) {
                 manager.notify(NOTIFICATION_ID, buildStatusNotification(copy))
                 // After the post, never before: a notify that throws must not leave the gate
                 // believing something is on screen that is not.
-                notificationGate.onPosted(copy)
+                notificationGate.onPosted(copy, localeTag)
             }
         }
 
@@ -407,11 +429,11 @@ class NudgeMonitorService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                getString(com.astraedus.nudge.R.string.notification_channel_name),
+                withAppLocale().getString(com.astraedus.nudge.R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description =
-                    getString(com.astraedus.nudge.R.string.notification_channel_description)
+                    withAppLocale().getString(com.astraedus.nudge.R.string.notification_channel_description)
                 setShowBadge(false)
             }
         )

@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.R
 import android.content.Context
 import android.graphics.Color
@@ -94,7 +95,7 @@ class CounterOverlayManager @Inject constructor(
     override fun updateCount(sessionCount: Int, dailyTotal: Int) {
         if (!isShowing) return
         counterText?.text = sessionCount.toString()
-        dailyText?.text = appContext.getString(R.string.service_counter_today, dailyTotal)
+        dailyText?.text = appContext.withAppLocale().getString(R.string.service_counter_today, dailyTotal)
 
         val counterColor = when {
             sessionCount >= 30 -> Color.argb(220, 255, 0, 0)
@@ -181,7 +182,7 @@ class CounterOverlayManager @Inject constructor(
         container.addView(labelText)
 
         dailyText = AwarenessOverlayWindow.Label(ctx).apply {
-            text = ctx.getString(R.string.service_counter_today, 0)
+            text = ctx.withAppLocale().getString(R.string.service_counter_today, 0)
             setTextColor(Color.argb(150, 255, 255, 255))
             textSize = 13f
             gravity = Gravity.CENTER
@@ -199,9 +200,9 @@ class CounterOverlayManager @Inject constructor(
          * a brand word and passes through.
          */
         fun displayLabel(context: Context, key: String): String = when (key) {
-            "taps" -> context.getString(R.string.service_counter_taps)
-            "scrolls" -> context.getString(R.string.service_counter_scrolls)
-            "videos" -> context.getString(R.string.service_counter_videos)
+            "taps" -> context.withAppLocale().getString(R.string.service_counter_taps)
+            "scrolls" -> context.withAppLocale().getString(R.string.service_counter_scrolls)
+            "videos" -> context.withAppLocale().getString(R.string.service_counter_videos)
             else -> key
         }
     }

@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.ui.text.resolve
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -87,10 +88,10 @@ object UseReminderNotifier {
     private fun createChannel(context: Context) {
         val channel = NotificationChannel(
             USE_REMINDER_CHANNEL_ID,
-            context.getString(R.string.use_reminder_channel_name),
+            context.withAppLocale().getString(R.string.use_reminder_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = context.getString(R.string.use_reminder_channel_description)
+            description = context.withAppLocale().getString(R.string.use_reminder_channel_description)
         }
         context.getSystemService(NotificationManager::class.java)
             ?.createNotificationChannel(channel)

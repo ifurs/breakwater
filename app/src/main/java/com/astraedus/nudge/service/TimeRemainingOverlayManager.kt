@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.ui.text.resolve
 import com.astraedus.nudge.ui.text.DurationText
 import com.astraedus.nudge.R
@@ -83,7 +84,7 @@ class TimeRemainingOverlayManager @Inject constructor(
         if (!isShowing) show()
 
         val tv = timeText ?: return
-        tv.text = appContext.getString(
+        tv.text = appContext.withAppLocale().getString(
             R.string.service_time_left,
             DurationText.compact(remainingMs).resolve(appContext)
         )

@@ -1,5 +1,6 @@
 package com.astraedus.nudge.ui.widget
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
@@ -81,7 +82,7 @@ private fun TodayContent(snapshot: WidgetSnapshot.Today) {
             .clickable(openAppAt(WidgetDeepLink.ROUTE_STATS))
             // The whole surface is one tap target, so TalkBack has to be told what the tap does.
             // Without this a screen reader announces three loose numbers and no action.
-            .semantics { contentDescription = context.getString(R.string.widget_open_app) },
+            .semantics { contentDescription = context.withAppLocale().getString(R.string.widget_open_app) },
         verticalAlignment = Alignment.Vertical.CenterVertically,
         horizontalAlignment = Alignment.Horizontal.Start
     ) {
@@ -89,23 +90,23 @@ private fun TodayContent(snapshot: WidgetSnapshot.Today) {
             Row(modifier = GlanceModifier.fillMaxWidth()) {
                 Metric(
                     value = snapshot.screenTime,
-                    label = context.getString(R.string.widget_today_screen_time),
+                    label = context.withAppLocale().getString(R.string.widget_today_screen_time),
                     modifier = GlanceModifier.defaultWeight()
                 )
                 Metric(
                     value = snapshot.blocked.toString(),
-                    label = context.getString(R.string.widget_today_blocked),
+                    label = context.withAppLocale().getString(R.string.widget_today_blocked),
                     modifier = GlanceModifier.defaultWeight()
                 )
                 Metric(
                     value = snapshot.walkedAway.toString(),
-                    label = context.getString(R.string.widget_today_walked_away),
+                    label = context.withAppLocale().getString(R.string.widget_today_walked_away),
                     modifier = GlanceModifier.defaultWeight()
                 )
             }
         } else {
             Text(
-                text = context.getString(R.string.widget_today_title),
+                text = context.withAppLocale().getString(R.string.widget_today_title),
                 style = labelStyle()
             )
             Text(text = snapshot.screenTime, style = heroStyle(), maxLines = 1)
@@ -113,7 +114,7 @@ private fun TodayContent(snapshot: WidgetSnapshot.Today) {
             // One line rather than two stacked metrics: at 2x2 there is room for one more row of
             // text, and two numbers with their own labels would each be too small to read.
             Text(
-                text = context.getString(
+                text = context.withAppLocale().getString(
                     R.string.widget_today_compact_counts,
                     snapshot.blocked,
                     snapshot.walkedAway
@@ -129,7 +130,7 @@ private fun TodayContent(snapshot: WidgetSnapshot.Today) {
         if (!snapshot.hasUsagePermission) {
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = context.getString(R.string.widget_today_no_usage_access),
+                text = context.withAppLocale().getString(R.string.widget_today_no_usage_access),
                 style = labelStyle(GlanceTheme.colors.error),
                 maxLines = 1
             )

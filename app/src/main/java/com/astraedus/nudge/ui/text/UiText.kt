@@ -30,7 +30,8 @@ class ResourcesTextResolver(private val resources: Resources) : TextResolver {
     }
 }
 
-fun Context.textResolver(): TextResolver = ResourcesTextResolver(resources)
+/** Resolves in the user's per-app language even from a Service, receiver, worker or widget. */
+fun Context.textResolver(): TextResolver = ResourcesTextResolver(withAppLocale().resources)
 
 fun UiText.resolve(context: Context): String = resolve(context.textResolver())
 

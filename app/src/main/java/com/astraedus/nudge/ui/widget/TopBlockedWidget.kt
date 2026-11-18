@@ -1,5 +1,6 @@
 package com.astraedus.nudge.ui.widget
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
@@ -106,18 +107,18 @@ private fun TopBlockedContent(read: WidgetReads.TopBlockedRead) {
                 // "Blocked most / Last 7 days" describes the list, not what tapping the header
                 // does. TalkBack needs the action named.
                 .semantics {
-                    contentDescription = context.getString(R.string.widget_top_blocked_open)
+                    contentDescription = context.withAppLocale().getString(R.string.widget_top_blocked_open)
                 },
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
-                text = context.getString(R.string.widget_top_blocked_title),
+                text = context.withAppLocale().getString(R.string.widget_top_blocked_title),
                 style = titleStyle(),
                 modifier = GlanceModifier.defaultWeight(),
                 maxLines = 1
             )
             Text(
-                text = context.getString(R.string.widget_top_blocked_range),
+                text = context.withAppLocale().getString(R.string.widget_top_blocked_range),
                 style = labelStyle(),
                 maxLines = 1
             )
@@ -129,7 +130,7 @@ private fun TopBlockedContent(read: WidgetReads.TopBlockedRead) {
             // Rendered, not hidden. A card that vanishes when there is nothing to say teaches the
             // user nothing about what it would say when there is.
             Text(
-                text = context.getString(R.string.widget_top_blocked_empty),
+                text = context.withAppLocale().getString(R.string.widget_top_blocked_empty),
                 style = labelStyle(),
                 maxLines = 3
             )
@@ -176,7 +177,7 @@ private fun BlockedRow(
         } else {
             // A rank, never an emoji, and never a blank gap that would knock the bars out of line.
             Text(
-                text = context.getString(R.string.widget_top_blocked_rank, rank),
+                text = context.withAppLocale().getString(R.string.widget_top_blocked_rank, rank),
                 style = labelStyle(),
                 modifier = GlanceModifier.size(ICON_SIZE),
                 maxLines = 1

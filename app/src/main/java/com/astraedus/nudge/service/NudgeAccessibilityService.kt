@@ -1,5 +1,6 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import com.astraedus.nudge.ui.text.resolve
 import com.astraedus.nudge.ui.overlay.toUiText
 import com.astraedus.nudge.R
@@ -2572,7 +2573,7 @@ class NudgeAccessibilityService : AccessibilityService() {
                 putExtra(BlockOverlayActivity.EXTRA_BLOCK_MODE, "DELAY")
                 putExtra(BlockOverlayActivity.EXTRA_DELAY_SECONDS, remainingSeconds)
                 putExtra(BlockOverlayActivity.EXTRA_PACKAGE_NAME, packageName)
-                putExtra(BlockOverlayActivity.EXTRA_RULE_NAME, getString(R.string.service_autokick_cooldown_rule))
+                putExtra(BlockOverlayActivity.EXTRA_RULE_NAME, withAppLocale().getString(R.string.service_autokick_cooldown_rule))
             }
             return true
         }
@@ -2907,7 +2908,7 @@ class NudgeAccessibilityService : AccessibilityService() {
             // Named with the site, not just "Auto-kick cooldown": the overlay's app label resolves
             // to the BROWSER here (it is the package we are blocking re-entry to), and "Chrome" on
             // its own would not tell the user which site they were just removed from.
-            putExtra(BlockOverlayActivity.EXTRA_RULE_NAME, getString(R.string.service_autokick_cooldown_rule_site, domain))
+            putExtra(BlockOverlayActivity.EXTRA_RULE_NAME, withAppLocale().getString(R.string.service_autokick_cooldown_rule_site, domain))
         }
         // True regardless of whether the overlay was actually shown: the cooldown IS in force, so
         // evaluation must stop either way. Falling through to a rule lookup because the gate
@@ -3516,9 +3517,10 @@ class NudgeAccessibilityService : AccessibilityService() {
      */
     private fun coverLabel(featureKey: String?): String {
         val feature = InAppDetector.Feature.entries.firstOrNull { it.key == featureKey }
-        return getString(
+        val localized = withAppLocale()
+        return localized.getString(
             R.string.service_cover_label,
-            feature?.displayName ?: getString(R.string.service_cover_this_tab),
+            feature?.displayName ?: localized.getString(R.string.service_cover_this_tab),
             ownAppLabel
         )
     }

@@ -1,10 +1,10 @@
 package com.astraedus.nudge.ui.screens.config
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.astraedus.nudge.R
+import com.astraedus.nudge.domain.text.UiText
 import com.astraedus.nudge.data.db.entity.BlockRule
 import com.astraedus.nudge.data.preferences.NudgePreferences
 import com.astraedus.nudge.data.repository.BlockRuleRepository
@@ -25,7 +25,6 @@ import com.astraedus.nudge.data.repository.RuleArming
 import com.astraedus.nudge.domain.engine.FirstUnlockWindow
 import com.astraedus.nudge.domain.usecase.SetDayStartMinuteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,9 +47,7 @@ class UnifiedAppConfigViewModel @Inject constructor(
     private val essentialPackages: EssentialPackages,
     private val packageFacts: PackageFacts,
     private val nudgePreferences: NudgePreferences,
-    private val setDayStartMinuteUseCase: SetDayStartMinuteUseCase,
-    /** Only for the text of the Strict Mode prompts, which the dialog shows as a plain string. */
-    @ApplicationContext private val context: Context
+    private val setDayStartMinuteUseCase: SetDayStartMinuteUseCase
 ) : ViewModel() {
 
     private val packageName: String = savedStateHandle.get<String>("packageName") ?: ""
@@ -557,7 +554,7 @@ class UnifiedAppConfigViewModel @Inject constructor(
             )
             val weakens = defaultWeakens || scheduledWeakens || featureWeakens
             if (weakens) {
-                strictModeGate.run(prompt = context.getString(R.string.config_prompt_weaken)) {
+                strictModeGate.run(prompt = UiText.of(R.string.config_prompt_weaken)) {
                     performSave(state, newDefault)
                 }
             } else {
@@ -632,7 +629,7 @@ class UnifiedAppConfigViewModel @Inject constructor(
             // Deleting an existing rule weakens protection; gate it under Strict Mode.
             // (No existing rule = nothing to weaken; delete proceeds freely.)
             if (existingDefaultRule != null) {
-                strictModeGate.run(prompt = context.getString(R.string.config_prompt_delete)) {
+                strictModeGate.run(prompt = UiText.of(R.string.config_prompt_delete)) {
                     performDelete()
                 }
             } else {
@@ -839,7 +836,7 @@ class UnifiedAppConfigViewModel @Inject constructor(
             }
             if (setDayStartMinuteUseCase.requiresUnlock(minute)) {
                 strictModeGate.run(
-                    prompt = context.getString(R.string.config_prompt_day_start),
+                    prompt = UiText.of(R.string.config_prompt_day_start),
                     action = write
                 )
             } else {

@@ -1,10 +1,12 @@
 package com.astraedus.nudge.ui.screens.config
 
-import android.content.Context
 import com.astraedus.nudge.ui.components.UsageReminderInput
-import io.mockk.mockk
 import androidx.lifecycle.SavedStateHandle
 import com.astraedus.nudge.MainDispatcherRule
+import com.astraedus.nudge.R
+import com.astraedus.nudge.domain.text.UiText
+import com.astraedus.nudge.testing.en
+import com.astraedus.nudge.testing.uk
 import com.astraedus.nudge.data.db.entity.BlockRule
 import com.astraedus.nudge.data.preferences.NudgePreferences
 import com.astraedus.nudge.data.repository.RuleSnapshot
@@ -84,9 +86,7 @@ class UnifiedAppConfigViewModelTest {
             FakeEssentialPackages(),
             FakePackageFacts(),
             prefs,
-            dayStartUseCase(),
-            // Only the Strict Mode prompt text reads it; a relaxed mock answers with "".
-            mockk<Context>(relaxed = true)
+            dayStartUseCase()
         )
     }
 
@@ -664,6 +664,11 @@ class UnifiedAppConfigViewModelTest {
 
         assertNotNull("moving the day start can skip today's window (spec 5.6)", vm.challenge.value)
         assertEquals("nothing is written before the challenge passes", 240, prefs.dayStartMinute.first())
+        // The prompt is typed text (no Context in the view model), worded by the language at resolve time.
+        val prompt = vm.challenge.value!!.prompt
+        assertEquals(UiText.of(R.string.config_prompt_day_start), prompt)
+        assertEquals("Change when your day starts", prompt.en())
+        assertEquals("Змінити початок вашої доби", prompt.uk())
     }
 
     @Test

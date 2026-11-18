@@ -2,6 +2,10 @@ package com.astraedus.nudge.ui.screens.home
 
 import android.content.Context
 import com.astraedus.nudge.MainDispatcherRule
+import com.astraedus.nudge.R
+import com.astraedus.nudge.domain.text.UiText
+import com.astraedus.nudge.testing.en
+import com.astraedus.nudge.testing.uk
 import com.astraedus.nudge.domain.engine.TimeTracker
 import com.astraedus.nudge.domain.nuke.NukeKey
 import com.astraedus.nudge.domain.nuke.NukeKeyKind
@@ -76,6 +80,19 @@ class HomeNukeToggleGateTest {
         vm.toggleGlobalEnabled()
         assertNull(vm.nukeUnlock.value)
         assertFalse(preferences.isGlobalEnabled.first())
+    }
+
+    @Test
+    fun `under Strict Mode the turn-off prompt is typed text, worded by the language at resolve time`() = runTest(dispatcher) {
+        preferences.setStrictModeEnabled(true)
+        val vm = viewModel()
+
+        vm.toggleGlobalEnabled()
+
+        val prompt = vm.challenge.value!!.prompt
+        assertEquals(UiText.of(R.string.home_prompt_turn_off_all), prompt)
+        assertEquals("Turn off all blocking", prompt.en())
+        assertEquals("Вимкнути все блокування", prompt.uk())
     }
 
     @Test

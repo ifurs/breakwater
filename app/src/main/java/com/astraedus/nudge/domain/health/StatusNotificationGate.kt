@@ -49,11 +49,12 @@ class StatusNotificationGate {
      * post has succeeded, so a `notify()` that throws (a revoked `POST_NOTIFICATIONS` grant on some
      * OEM builds) does not leave this believing something is on screen that is not.
      */
-    fun shouldPost(copy: ServiceHealthCopy): Boolean = fingerprint(copy) != lastPosted
+    fun shouldPost(copy: ServiceHealthCopy, localeTag: String = ""): Boolean =
+        fingerprint(copy, localeTag) != lastPosted
 
     /** Records what is now on screen. Call after every successful post, including `startForeground`. */
-    fun onPosted(copy: ServiceHealthCopy) {
-        lastPosted = fingerprint(copy)
+    fun onPosted(copy: ServiceHealthCopy, localeTag: String = "") {
+        lastPosted = fingerprint(copy, localeTag)
     }
 
     // Deliberately no `reset()`. The only event that takes this notification down without us
@@ -69,6 +70,7 @@ class StatusNotificationGate {
          * join. Write it escaped, never as a raw control byte: a literal NUL in a source
          * file makes the whole file read as binary and costs every future diff.
          */
-        fun fingerprint(copy: ServiceHealthCopy): String = "${copy.title}\u0000${copy.body}"
+        fun fingerprint(copy: ServiceHealthCopy, localeTag: String): String =
+            "${copy.title}\u0000${copy.body}\u0000$localeTag"
     }
 }

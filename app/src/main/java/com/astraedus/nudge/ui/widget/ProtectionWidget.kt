@@ -1,5 +1,6 @@
 package com.astraedus.nudge.ui.widget
 
+import com.astraedus.nudge.ui.text.withAppLocale
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -117,9 +118,9 @@ private fun ProtectionRow(
         ProtectionState.DEGRADED -> GlanceTheme.colors.error
     }
     val statusText = when (snapshot.state) {
-        ProtectionState.ON -> context.getString(R.string.widget_protection_on)
-        ProtectionState.OFF -> context.getString(R.string.widget_protection_off)
-        ProtectionState.DEGRADED -> context.getString(R.string.widget_protection_degraded)
+        ProtectionState.ON -> context.withAppLocale().getString(R.string.widget_protection_on)
+        ProtectionState.OFF -> context.withAppLocale().getString(R.string.widget_protection_off)
+        ProtectionState.DEGRADED -> context.withAppLocale().getString(R.string.widget_protection_degraded)
     }
 
     Row(
@@ -151,7 +152,7 @@ private fun ProtectionRow(
                 // Says what WILL happen, so a tap that opens the app does not read as the widget
                 // failing to toggle.
                 Text(
-                    text = context.getString(R.string.widget_protection_locked),
+                    text = context.withAppLocale().getString(R.string.widget_protection_locked),
                     style = labelStyle(),
                     maxLines = 1
                 )

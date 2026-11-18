@@ -457,7 +457,7 @@ class HomeViewModel @Inject constructor(
                 // Nuke first, then Strict Mode: both locks guard this switch, and each is asked
                 // only once the one before it has been satisfied.
                 val nuke = nudgePreferences.nukeState.first()
-                val prompt = context.getString(R.string.home_prompt_turn_off_all)
+                val prompt = UiText.of(R.string.home_prompt_turn_off_all)
                 nukeGate.run(
                     prompt = prompt,
                     weaken = NukePolicy.masterToggleOffRequiresUnlock(nuke)

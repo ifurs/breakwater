@@ -3,6 +3,10 @@ package com.astraedus.nudge.ui.screens.home
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.astraedus.nudge.MainDispatcherRule
+import com.astraedus.nudge.R
+import com.astraedus.nudge.domain.text.UiText
+import com.astraedus.nudge.testing.en
+import com.astraedus.nudge.testing.uk
 import com.astraedus.nudge.data.db.entity.BlockRule
 import com.astraedus.nudge.data.repository.BlockRuleRepository
 import com.astraedus.nudge.domain.model.BlockMode
@@ -117,8 +121,7 @@ class ShortVideoBlocksViewModelTest {
                 override suspend fun current() =
                     com.astraedus.nudge.data.repository.RuleSnapshot.of(db.rules, emptyList(), emptyList())
                 override suspend fun enabledRules() = db.rules
-            }),
-            mockk<Context>(relaxed = true)
+            })
         )
 
         val state = config.uiState.first { !it.isLoading }
@@ -148,6 +151,19 @@ class ShortVideoBlocksViewModelTest {
 
         assertNotNull(vm.challenge.value)
         assertEquals(before, db.rules)
+    }
+
+    @Test
+    fun `the unlock prompt is typed text, worded by the language at resolve time`() = runTest(dispatcher) {
+        val vm = viewModel(strictOn = true)
+        vm.setBlocked(reelsRow(vm), true)
+
+        vm.setBlocked(reelsRow(vm), false)
+
+        val prompt = vm.challenge.value!!.prompt
+        assertEquals(UiText.of(R.string.home_short_unlock_prompt, "Instagram"), prompt)
+        assertEquals("Turn off short-video blocking in Instagram", prompt.en())
+        assertEquals("Вимкнути блокування коротких відео у Instagram", prompt.uk())
     }
 
     @Test

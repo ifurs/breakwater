@@ -182,6 +182,22 @@ class StatusNotificationGateTest {
         )
     }
 
+    /**
+     * The copy is the same ids in every language, so a per-app language change alone has to count as
+     * a change, or the ongoing notification keeps the old language until the health itself moves.
+     */
+    @Test
+    fun `a language change re-posts the same copy once, and only once`() {
+        val gate = StatusNotificationGate()
+        gate.onPosted(active, "en-US")
+
+        assertFalse(gate.shouldPost(active, "en-US"))
+        assertTrue(gate.shouldPost(active, "uk-UA"))
+
+        gate.onPosted(active, "uk-UA")
+        assertFalse(gate.shouldPost(active, "uk-UA"))
+    }
+
     // --- The failed-post case --------------------------------------------------------------------
 
     /**

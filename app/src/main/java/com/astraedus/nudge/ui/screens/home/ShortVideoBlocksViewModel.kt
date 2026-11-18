@@ -8,6 +8,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.astraedus.nudge.R
+import com.astraedus.nudge.domain.text.UiText
 import com.astraedus.nudge.data.db.entity.BlockRule
 import com.astraedus.nudge.data.preferences.NudgePreferences
 import com.astraedus.nudge.data.repository.BlockRuleRepository
@@ -135,7 +136,7 @@ class ShortVideoBlocksViewModel @Inject constructor(
         }
         if (needsChallenge) {
             strictModeGate.run(
-                prompt = context.getString(R.string.home_short_unlock_prompt, row.appLabel),
+                prompt = UiText.of(R.string.home_short_unlock_prompt, row.appLabel),
                 action = { switchOff(row, challengePassed = true) }
             )
         }
