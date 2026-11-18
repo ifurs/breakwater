@@ -3,7 +3,7 @@
     <string name="home_tile_screen_time">Екранний час</string>
     <string name="home_action_see_breakdown">Докладніше</string>
     <string name="home_action_tap_to_enable">Увімкнути</string>
-    <string name="home_tile_blocked_apps">Заблоковані застосунки</string>
+    <string name="home_tile_blocked_apps">Застосунки з правилами</string>
     <string name="home_action_see_apps">Відкрити список</string>
     <string name="home_section_today">Сьогодні</string>
     <string name="home_section_hint">Торкніться плитки, щоб побачити графіки</string>

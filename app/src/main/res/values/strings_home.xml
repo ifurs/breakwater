@@ -5,7 +5,7 @@
     <string name="home_action_see_breakdown">See breakdown</string>
     <string name="home_action_tap_to_enable">Tap to enable</string>
     <!-- The count of apps a rule that is on covers (the old "Active Apps" tile). -->
-    <string name="home_tile_blocked_apps">Blocked apps</string>
+    <string name="home_tile_blocked_apps">Apps with rules</string>
     <string name="home_action_see_apps">Open list</string>
     <string name="home_section_today">Today</string>
     <string name="home_section_hint">Tap a tile for charts</string>

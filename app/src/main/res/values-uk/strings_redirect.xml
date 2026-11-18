@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="redirect_pick_better_app">Оберіть кращий застосунок</string>
+    <string name="redirect_pick_better_app">Кращий застосунок</string>
     <string name="redirect_bubble_pick_description">Оберіть кращий застосунок, щоб перейти до нього замість цього</string>
     <string name="redirect_bubble_go_description">Перейти до %1$s замість цього</string>
     <string name="redirect_bubble_pick_action">Обрати застосунок</string>
