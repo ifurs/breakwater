@@ -402,4 +402,67 @@ class StrictModeEscapeGuardTest {
     fun `the same storage page with the real buttons next to it is still guarded`() {
         assertTrue(guards("Nudge - App Blocker\nВидалити дані\nВидалити"))
     }
+
+    // ── Captured on a real Android 15 Ukrainian Settings (the emulator) ──
+    //
+    // Node texts read off the Android 15 emulator (AOSP Settings, language uk) on 2026-11-18, app
+    // label "Nudge - App Blocker". Unlike the fixtures above they are not reconstructed from memory.
+
+    /** Accessibility detail page, as captured: the shortcut row reads "<label>: швидкий доступ". */
+    private val capturedUkAccessibilityDetail = """
+        Використовувати Nudge - App Blocker
+        Параметри
+        Nudge - App Blocker: швидкий доступ
+        Вимкнено
+        Nudge відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування. Жодні дані не залишають ваш пристрій.
+        Про додаток
+    """.trimIndent()
+
+    /** App Info page, as captured: only the short buttons, no "Примусово зупинити". */
+    private val capturedUkAppInfo = """
+        Nudge - App Blocker
+        Архівувати
+        Видалити
+        Зупинити
+        Сповіщення
+        Близько 2 сповіщень на тиждень
+        Дозволи
+        Пам’ять і кеш
+        Зайнято 26,96 МБ (внутрішня пам'ять)
+        Мобільний трафік
+        Трафік не споживався
+        Час використання пристрою
+        2 хвилини сьогодні
+        Використання заряду додатком
+        Про додаток
+    """.trimIndent()
+
+    /** Accessibility LIST page, as captured: shows our label but must stay unguarded. */
+    private val capturedUkAccessibilityList = """
+        Доступність
+        Завантажені додатки
+        Nudge - App Blocker
+        Вимкнено
+        TalkBack
+    """.trimIndent()
+
+    @Test
+    fun `captured Android 15 uk accessibility detail page -- guard`() {
+        assertTrue(guards(capturedUkAccessibilityDetail))
+    }
+
+    @Test
+    fun `captured Android 15 uk detail page is guarded by the shortcut row alone`() {
+        assertTrue(guards("Nudge - App Blocker: швидкий доступ\nВимкнено"))
+    }
+
+    @Test
+    fun `captured Android 15 uk app info page -- guard`() {
+        assertTrue(guards(capturedUkAppInfo))
+    }
+
+    @Test
+    fun `captured Android 15 uk accessibility list page -- NOT guarded`() {
+        assertFalse(guards(capturedUkAccessibilityList))
+    }
 }

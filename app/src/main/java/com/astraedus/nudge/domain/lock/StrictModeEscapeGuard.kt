@@ -68,16 +68,19 @@ object StrictModeEscapeGuard {
      * not a trustworthy read of what the Settings window shows, e.g. per-app language).
      *
      * - **English**: AOSP/Pixel `accessibility_shortcut_title` "...shortcut".
-     * - **Ukrainian**: the same AOSP string in `values-uk` ("Ярлик ..."), and the shortcut title of
-     *   the AOSP `Accessibility` page ("Швидке ввімкнення").
+     * - **Ukrainian**: Android 15 (AOSP Settings, uk) draws the shortcut row as
+     *   "Nudge - App Blocker: швидкий доступ", CAPTURED on the emulator on 2026-11-18. "Ярлик ..."
+     *   and "Швидке ввімкнення" are the older AOSP wording from memory (other Android versions and
+     *   OEMs); they stay as extra signals and are not device-verified.
      *
-     * NONE of the Ukrainian words was read off a device: they are the AOSP resource wording from
-     * memory and need an a11y-capture on a uk phone (L6).
+     * The captured Android 15 uk pages (detail, App Info, list) are the fixtures of
+     * `StrictModeEscapeGuardTest`.
      */
     private val ACCESSIBILITY_DETAIL_SIGNALS = listOf(
         "shortcut",            // en
-        "ярлик",               // uk: "Ярлик служби", "Ярлик Nudge"
-        "швидке ввімкнення"    // uk: "Швидке ввімкнення"
+        "швидкий доступ",      // uk, Android 15 captured: "<label>: швидкий доступ"
+        "ярлик",               // uk, from memory: "Ярлик служби", "Ярлик Nudge"
+        "швидке ввімкнення"    // uk, from memory: "Швидке ввімкнення"
     ).map(::normalize)
 
     /**
@@ -96,7 +99,9 @@ object StrictModeEscapeGuard {
      * they appear ANYWHERE in the window text. They are specific enough to be safe as substrings.
      *
      * - en: "Force stop", "Uninstall" (AOSP `force_stop`, `uninstall_text`).
-     * - uk: "Примусово зупинити" (AOSP/Pixel), "Примусова зупинка" (Samsung One UI).
+     * - uk: "Примусово зупинити" (AOSP/Pixel), "Примусова зупинка" (Samsung One UI). Both from
+     *   memory: the Android 15 uk page shows only the short buttons "Архівувати", "Видалити",
+     *   "Зупинити" (see [APP_INFO_BUTTONS]).
      */
     private val APP_INFO_SIGNALS = listOf(
         "Force stop", "Uninstall",
@@ -109,9 +114,10 @@ object StrictModeEscapeGuard {
      * shows the app's label), so they count only when a whole node of the window says exactly this
      * (the button's own text), never as a substring of a longer line.
      *
-     * - uk: "Видалити" (AOSP `uninstall_text`), "Зупинити" (AOSP `force_stop`).
+     * - uk: "Видалити" (AOSP `uninstall_text`), "Зупинити" (AOSP `force_stop`). Both are the whole
+     *   lines of the App Info page captured on Android 15 (AOSP Settings, uk) on 2026-11-18.
      *
-     * Same device-capture caveat as above. A miss here costs nothing the force-stop phrase or the
+     * A miss here costs nothing the force-stop phrase or the
      * accessibility page does not also catch, and a wrongful hit would trap the user on a page
      * that only clears data.
      */
