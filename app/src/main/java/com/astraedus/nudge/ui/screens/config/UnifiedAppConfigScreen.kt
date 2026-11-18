@@ -1048,11 +1048,7 @@ private fun featureModeLabel(mode: FeatureMode): Int = when (mode) {
  * are; Explore and the TikTok feed are ordinary words and come from resources.
  */
 @Composable
-private fun featureTitle(feature: FeatureInfo): String = when (feature.key) {
-    "EXPLORE" -> stringResource(R.string.config_feature_explore)
-    "TIKTOK_FEED" -> stringResource(R.string.config_feature_tiktok_feed)
-    else -> feature.displayName
-}
+private fun featureTitle(feature: FeatureInfo): String = FeatureNames.of(feature.key).asString()
 
 /**
  * The headline of the feature section: "Block only Reels, keep the rest of Instagram". It names the

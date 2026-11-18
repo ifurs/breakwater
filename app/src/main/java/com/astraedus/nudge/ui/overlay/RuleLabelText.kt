@@ -5,6 +5,7 @@ import com.astraedus.nudge.domain.model.BlockMode
 import com.astraedus.nudge.domain.model.RuleLabel
 import com.astraedus.nudge.domain.text.UiText
 import com.astraedus.nudge.ui.components.blockModeLabelRes
+import com.astraedus.nudge.ui.screens.config.FeatureNames
 
 /**
  * Words a [RuleLabel] for the block screen's "Rule: ..." line. The engine says WHAT the label is
@@ -14,7 +15,7 @@ import com.astraedus.nudge.ui.components.blockModeLabelRes
 internal fun RuleLabel.toUiText(): UiText {
     val parts = buildList {
         if (features.isNotEmpty()) {
-            add(UiText.Raw(features.joinToString(", ") { it.replaceFirstChar { c -> c.uppercaseChar() } }))
+            add(UiText.Joined(features.map { FeatureNames.of(it) }, ", "))
         }
         add(subject.toUiText())
     }
