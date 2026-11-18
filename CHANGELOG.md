@@ -11,11 +11,16 @@ All notable changes to Nudge are documented here. Format follows [Keep a Changel
 - First-run setup has a new step, "What do you want to block?", after the permissions, with the same switches.
 
 ### Changed
-- The "Active Apps / Manage" tile on Home is now "Blocked apps" with the number of apps that are being blocked. The three big "Manage Apps / Usage Stats / Settings" cards are gone: the bottom bar replaces them.
+- The "Active Apps / Manage" tile on Home is now "Apps with rules" with the number of apps that have a rule (an app with only a Reels or Shorts block counts too). The three big "Manage Apps / Usage Stats / Settings" cards are gone: the bottom bar replaces them.
 - An app's settings screen now starts with the part of the app you can block on its own (Reels, Shorts, the TikTok feed) under a plain headline such as "Block only Reels, keep the rest of Instagram", above "Default Behavior". Nothing else about how it works changed.
 - Manage Apps, Stats and Settings no longer have a back arrow, because they are main screens now.
 
 ### Fixed
+- The language you pick for Nudge in Android's "App languages" now applies everywhere, not only on screens: the ongoing notification, other notifications, widgets, the floating counters and covers, the Strict Mode prompts on Home and in an app's settings, and the "Rule: ..." line on the block screen. They used to follow the phone's language. The ongoing notification also switches language right away when you change it.
+- The block screen's rule line now names the part of the app by its proper name ("Rule: Shorts - Hard Block") instead of the stored key ("SHORTS").
+- The "Pick a better app" bubble on the block screen is no longer cut off in Ukrainian ("Кращий застосунок").
+- The Home tile that counts apps with rules no longer says "Blocked apps": an app with only a Reels or Shorts block is counted, though the app itself still opens. It is now "Apps with rules".
+- Strict Mode's Settings guard now recognises the Accessibility page of Nudge on an Android 15 phone in Ukrainian ("швидкий доступ"), checked against the real screens.
 - Lowering the Strict Mode difficulty while Strict Mode is on now asks for the unlock challenge first, like every other change that weakens it. Raising it is still instant.
 - Strict Mode's Settings guard no longer misses a page because Settings wrote a non-breaking space or a curly apostrophe in it.
 - With Strict Mode on, switching a short-video block off on Home can no longer skip the challenge when you switch the same block on and off in quick succession.
