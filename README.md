@@ -17,10 +17,19 @@
 ---
 
 <p align="center">
-  <img src="store-listing/screenshots/01-take-back-your-time.png" width="24%" alt="Dashboard">
-  <img src="store-listing/screenshots/02-delay-to-open.png" width="24%" alt="Delay to open">
-  <img src="store-listing/screenshots/04-breathing-exercise.png" width="24%" alt="Breathing exercise">
-  <img src="store-listing/screenshots/03-block-shorts.png" width="24%" alt="Block YouTube Shorts">
+  <img src="docs/screenshots/en-home.png" width="24%" alt="Home: one switch each to block Instagram Reels, YouTube Shorts, the TikTok feed and Instagram Explore">
+  <img src="docs/screenshots/en-app-editor.png" width="24%" alt="App editor: block only Reels and keep the rest of Instagram">
+  <img src="docs/screenshots/en-block-screen.png" width="24%" alt="Block screen with a better app to go to instead">
+  <img src="docs/screenshots/en-stats.png" width="24%" alt="Usage stats: screen time, streak, willpower and temptation patterns">
+</p>
+
+<p align="center"><b>Українською</b> — the whole app is translated into Ukrainian and follows the phone's or the app's language.</p>
+
+<p align="center">
+  <img src="docs/screenshots/uk-home.png" width="24%" alt="Головна: блокування коротких відео">
+  <img src="docs/screenshots/uk-app-editor.png" width="24%" alt="Налаштування Instagram: блокувати лише Reels">
+  <img src="docs/screenshots/uk-apps.png" width="24%" alt="Керування застосунками">
+  <img src="docs/screenshots/uk-stats.png" width="24%" alt="Статистика використання">
 </p>
 
 <p align="center">
