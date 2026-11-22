@@ -6,6 +6,7 @@ import com.astraedus.nudge.R
 import com.astraedus.nudge.domain.model.BlockMode
 import com.astraedus.nudge.domain.model.FeatureMode
 import com.astraedus.nudge.domain.surfaces.PlatformSurfacesRegistry
+import com.astraedus.nudge.service.WebDomainDetector
 
 @Immutable
 data class FeatureOverride(
@@ -129,6 +130,39 @@ data class UnifiedAppConfigState(
     val showDeleteConfirmation: Boolean = false
 ) {
     val supportsFeatures: Boolean get() = availableFeatures.isNotEmpty()
+
+    /**
+     * Whether this package is a browser, by the SAME list the service routes with
+     * ([WebDomainDetector.isBrowserPackage]). A direct rule on a browser never blocks the browser
+     * itself, only the websites listed under "Block on web too" (spec follow-up F5; blocking the
+     * whole browser needs a group or All apps rule), so the "Default Behavior" section must not
+     * claim that opening the app triggers the block.
+     */
+    val isBrowser: Boolean get() = WebDomainDetector.isBrowserPackage(packageName)
+
+    /** Title of the switch that turns the app-level mode on or off. */
+    @get:StringRes
+    val wholeAppTitleRes: Int
+        get() = if (isBrowser) R.string.config_block_whole_app_browser else R.string.config_block_whole_app
+
+    /**
+     * Subtitle under that switch. For a browser it says what the mode applies to (the websites),
+     * never that opening the app triggers it.
+     */
+    @get:StringRes
+    val wholeAppHintRes: Int
+        get() = when {
+            isBrowser && blocksWholeApp -> R.string.config_whole_app_on_browser
+            isBrowser -> R.string.config_whole_app_off_browser
+            blocksWholeApp -> R.string.config_whole_app_on
+            supportsFeatures -> R.string.config_whole_app_off_features
+            else -> R.string.config_whole_app_off
+        }
+
+    /** The sentence under the website list while the mode is the app-level one. */
+    @get:StringRes
+    val webSameModeRes: Int
+        get() = if (isBrowser) R.string.config_web_same_mode_browser else R.string.config_web_same_mode
 
     /**
      * Whether the app itself is gated. False means the app-level rule is [BlockMode.NONE]: the app

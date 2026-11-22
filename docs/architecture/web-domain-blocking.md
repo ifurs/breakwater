@@ -59,6 +59,11 @@ The flow, in `evaluateBrowser(browserPackage, grantAlive)`:
    an app: `handleDecision(decision, browser)` with no website, so the confrontation, the grant and
    the walk-away are the app's, and any web session's clock is ended (`endWebSession`). The overlay
    reads "Rule: <group name>".
+   The editor says the same: for a browser (`UnifiedAppConfigState.isBrowser`, the very list the
+   service routes with, `WebDomainDetector.isBrowserPackage`) App config does not offer "Block the
+   whole app" / "Opening X triggers the block below"; it reads "Block websites with one mode", the
+   mode applies to the "Block on web too" list, and the subtitle points to a group for blocking the
+   whole browser (`BrowserWholeAppSectionTest`). The stored rule is unchanged.
 4. Otherwise (Allow) the website path runs exactly as before, so a site rule still applies inside a
    browser the group let through.
 

@@ -48,6 +48,7 @@
     <string name="config_web_domains_label">Домени (через кому)</string>
     <string name="config_web_subdomains">Піддомени на кшталт www. і m. враховуються автоматично</string>
     <string name="config_web_same_mode">Сайти використовують той самий режим блокування, що й застосунок.</string>
+    <string name="config_web_same_mode_browser">Сайти блокуються в режимі, обраному нижче.</string>
     <string name="config_web_mode">Режим блокування сайтів</string>
     <string name="config_web_opens_normally">%1$s відкривається як завжди, а ці сайти все одно заблоковано. %2$s</string>
 
@@ -56,6 +57,9 @@
     <string name="config_block_whole_app">Блокувати весь застосунок</string>
     <string name="config_whole_app_on">Відкриття %1$s запускає блокування нижче.</string>
     <string name="config_whole_app_off_features">%1$s відкривається як завжди. Блокуються лише розділи, які ви ввімкнули.</string>
+    <string name="config_block_whole_app_browser">Блокувати сайти одним режимом</string>
+    <string name="config_whole_app_on_browser">Відкриття %1$s не запускає блокування. Режим нижче діє на сайти зі списку «Блокувати й у вебі». Щоб заблокувати весь браузер, додайте його до групи.</string>
+    <string name="config_whole_app_off_browser">%1$s відкривається як завжди. Сайти зі списку «Блокувати й у вебі» блокуються в режимі, який ви оберете там. Щоб заблокувати весь браузер, додайте його до групи.</string>
     <string name="config_whole_app_off">%1$s відкривається як завжди. Денний ліміт нижче, якщо він є, усе одно діє.</string>
     <string name="config_delay_duration">Тривалість затримки</string>
     <string name="config_hold_duration">Тривалість утримання</string>

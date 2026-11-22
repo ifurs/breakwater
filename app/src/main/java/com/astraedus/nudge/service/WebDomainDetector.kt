@@ -50,6 +50,13 @@ class WebDomainDetector @Inject constructor() {
         )
 
         /**
+         * Whether [packageName] is a browser the service routes to `evaluateBrowser` (where a DIRECT
+         * rule is web-only). The one answer, shared by the service ([isBrowser]) and the app editor,
+         * so the editor cannot call an app "the whole app" that the engine treats as a browser.
+         */
+        fun isBrowserPackage(packageName: String): Boolean = packageName in BROWSER_URL_BAR_IDS
+
+        /**
          * Resolve the candidate URL-bar view ids for a package, in probe order.
          * For each configured suffix we emit BOTH the fully-qualified id
          * (`<pkg>:id/<suffix>`) and the bare suffix, because Jetpack-Compose
@@ -108,7 +115,7 @@ class WebDomainDetector @Inject constructor() {
         }
     }
 
-    fun isBrowser(packageName: String): Boolean = packageName in BROWSER_URL_BAR_IDS
+    fun isBrowser(packageName: String): Boolean = isBrowserPackage(packageName)
 
     /**
      * Attempt to read the URL/domain from the browser's URL bar via the

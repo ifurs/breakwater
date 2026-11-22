@@ -55,6 +55,7 @@
     <string name="config_web_domains_placeholder" translatable="false">instagram.com, www.instagram.com</string>
     <string name="config_web_subdomains">Subdomains like www. and m. are matched automatically</string>
     <string name="config_web_same_mode">Websites use the same block mode as the app.</string>
+    <string name="config_web_same_mode_browser">Websites use the block mode chosen below.</string>
     <string name="config_web_mode">Website block mode</string>
     <!-- %1$s = the app, %2$s = the sentence describing the chosen block mode. -->
     <string name="config_web_opens_normally">%1$s opens normally; these websites are still blocked. %2$s</string>
@@ -65,6 +66,11 @@
     <string name="config_block_whole_app">Block the whole app</string>
     <string name="config_whole_app_on">Opening %1$s triggers the block below.</string>
     <string name="config_whole_app_off_features">%1$s opens normally. Only the features you turn on are blocked.</string>
+    <!-- Browsers: a direct rule only blocks websites, never the browser itself; blocking the whole
+         browser takes a group rule. %1$s = the browser. -->
+    <string name="config_block_whole_app_browser">Block websites with one mode</string>
+    <string name="config_whole_app_on_browser">Opening %1$s does not trigger the block. The mode below applies to the websites listed under \"Block on web too\". To block the whole browser, add it to a group.</string>
+    <string name="config_whole_app_off_browser">%1$s opens normally. Websites listed under \"Block on web too\" use the mode you pick there. To block the whole browser, add it to a group.</string>
     <string name="config_whole_app_off">%1$s opens normally. Any daily limit below still applies.</string>
     <string name="config_delay_duration">Delay Duration</string>
     <string name="config_hold_duration">Hold Duration</string>

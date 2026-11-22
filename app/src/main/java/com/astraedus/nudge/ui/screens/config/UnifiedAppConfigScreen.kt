@@ -480,7 +480,7 @@ fun UnifiedAppConfigContent(
                     // silently enforcing nothing (which is what used to happen).
                     if (state.blocksWholeApp) {
                         Text(
-                            stringResource(R.string.config_web_same_mode),
+                            stringResource(state.webSameModeRes),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -527,15 +527,9 @@ fun UnifiedAppConfigContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.config_block_whole_app), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(state.wholeAppTitleRes), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        if (state.blocksWholeApp) {
-                            stringResource(R.string.config_whole_app_on, state.appName)
-                        } else if (state.supportsFeatures) {
-                            stringResource(R.string.config_whole_app_off_features, state.appName)
-                        } else {
-                            stringResource(R.string.config_whole_app_off, state.appName)
-                        },
+                        stringResource(state.wholeAppHintRes, state.appName),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
