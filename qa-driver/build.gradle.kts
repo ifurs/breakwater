@@ -34,7 +34,7 @@ android {
     defaultConfig {
         // Nudge's own minSdk: the driver must run on every API level Nudge claims to.
         minSdk = 26
-        // Deliberately NOT under dev.astraedus.nudge: nothing in Nudge may ever mistake the
+        // Deliberately NOT under dev.ifurs.breakwater: nothing in Nudge may ever mistake the
         // driver for itself (own-package checks, the never-counted list, Strict Mode's guard).
         testApplicationId = "dev.astraedus.qadriver"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

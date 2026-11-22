@@ -101,7 +101,7 @@ class ServiceHealthTest {
                 )
             }
         }
-        assertEquals("Nudge is active", ServiceHealth.ACTIVE.notificationCopy().title.en())
+        assertEquals("Breakwater is active", ServiceHealth.ACTIVE.notificationCopy().title.en())
     }
 
     /**

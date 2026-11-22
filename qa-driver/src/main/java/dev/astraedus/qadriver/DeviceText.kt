@@ -13,8 +13,8 @@ object DeviceText {
      * no such line.
      *
      * Line-exact on purpose: the dump prints `Bound services:{…}` and, on the very next line,
-     * `Enabled services:{{dev.astraedus.nudge/…NudgeAccessibilityService}}`. The bound entry names
-     * the service by its LABEL ("Nudge - App Blocker"), the enabled entry by its component, so a
+     * `Enabled services:{{dev.ifurs.breakwater/…NudgeAccessibilityService}}`. The bound entry names
+     * the service by its LABEL ("Breakwater"), the enabled entry by its component, so a
      * "grep a few lines after `Bound services` for the class name" check matches the ENABLED line
      * and reads "bound" during exactly the suppression it was meant to detect.
      */
@@ -24,9 +24,9 @@ object DeviceText {
             .firstOrNull { it.startsWith("Bound services:") }
             ?.removePrefix("Bound services:")
 
-    /** True when a bound accessibility service's label starts with Nudge's. */
+    /** True when a bound accessibility service's label starts with Breakwater's. */
     fun isNudgeBound(dump: String): Boolean =
-        boundServicesLine(dump)?.contains("label=Nudge") == true
+        boundServicesLine(dump)?.contains("label=Breakwater") == true
 
     /**
      * The package of `mResumedActivity` in `dumpsys activity activities`, i.e. what the user is

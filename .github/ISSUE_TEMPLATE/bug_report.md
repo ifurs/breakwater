@@ -52,7 +52,7 @@ genuinely fine, and most reports arrive that way.
 
 ```bash
 # everything Nudge logged (attach this file)
-adb logcat -d --pid=$(adb shell pidof dev.astraedus.nudge) > nudge-log.txt
+adb logcat -d --pid=$(adb shell pidof dev.ifurs.breakwater) > nudge-log.txt
 
 # accessibility events only — smaller, and the most useful part for a blocking bug
 adb logcat -s NudgeA11yTrace:I > nudge-events.txt

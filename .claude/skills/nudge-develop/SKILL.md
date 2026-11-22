@@ -70,7 +70,7 @@ upstream string, check new upstream paths against the gate rule above, run tests
 - **Branding:** if Ivan wants to distribute, rename the app (string `app_name`, icon) and change
   `applicationId` in `app/build.gradle.kts` (e.g. `dev.ivan.<name>`); leave `namespace`
   (`com.astraedus.nudge`) alone unless doing a full package move. Update every hard-coded component name
-  (`dev.astraedus.nudge/...` in scripts and skills) — rule (b) "fixture honesty": derive, never retype.
+  (`dev.ifurs.breakwater/...` in scripts and skills) — rule (b) "fixture honesty": derive, never retype.
 - `README.md` is protected by a repo hook; edit it only when Ivan explicitly asks.
 
 ## Definition of done

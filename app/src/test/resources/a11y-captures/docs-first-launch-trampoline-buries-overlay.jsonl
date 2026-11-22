@@ -24,8 +24,8 @@
 #      The re-block was delivered to an instance already on its way out, and the stream never says
 #      "Docs is in front" again. OverlayArrivalReplayTest replays this through the guard.
 {"t":"WINDOW_STATE_CHANGED","p":"com.google.android.apps.docs.editors.docs","c":"android.widget.FrameLayout","w":11158,"ts":2407947125,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
-{"t":"WINDOW_STATE_CHANGED","p":"dev.astraedus.nudge","c":"android.widget.FrameLayout","w":11159,"ts":2407947284,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
-{"t":"WINDOW_STATE_CHANGED","p":"dev.astraedus.nudge","c":"com.astraedus.nudge.ui.overlay.BlockOverlayActivity","w":11161,"ts":2407947543,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
+{"t":"WINDOW_STATE_CHANGED","p":"dev.ifurs.breakwater","c":"android.widget.FrameLayout","w":11159,"ts":2407947284,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
+{"t":"WINDOW_STATE_CHANGED","p":"dev.ifurs.breakwater","c":"com.astraedus.nudge.ui.overlay.BlockOverlayActivity","w":11161,"ts":2407947543,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
 {"t":"WINDOW_CONTENT_CHANGED","p":"com.google.android.apps.docs.editors.docs","c":"android.widget.FrameLayout","w":11162,"ts":2407947972,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":1}
 {"t":"WINDOW_STATE_CHANGED","p":"com.google.android.apps.docs.editors.docs","c":"com.google.android.apps.docs.editors.homescreen.HomescreenActivity","w":11162,"ts":2407947972,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
 {"t":"WINDOW_CONTENT_CHANGED","p":"com.google.android.apps.docs.editors.docs","c":"android.view.ViewGroup","w":11162,"ts":2407948488,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":1}

@@ -1,5 +1,7 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.engine.FirstUnlockState
 import com.astraedus.nudge.domain.block.BlockLaunchGate
 import com.astraedus.nudge.domain.block.BlockLaunchGate.BlockIdentity
@@ -45,7 +47,7 @@ import com.astraedus.nudge.testing.anActiveRule
  */
 class DuplicateBlockLaunchReplayTest {
 
-    private val nudge = "dev.astraedus.nudge"
+    private val nudge = NudgeIdentity.APPLICATION_ID
     private val launcher = "com.google.android.apps.nexuslauncher"
     private val youtube = "com.google.android.youtube"
     private val ime = "com.google.android.inputmethod.latin"

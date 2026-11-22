@@ -164,7 +164,7 @@ logging, and imports `.maestro/fixtures/rules.json` — Nudge's own UI, where no
   revokes it — which is [#58](https://github.com/astraedus/nudge/issues/58)'s whole subject. So
   every block-expecting case starts from Home, and a case that does not is asserting on its
   predecessor's leftovers.
-- **Force-stopping `dev.astraedus.nudge` leaves the accessibility service unbound** and Android
+- **Force-stopping `dev.ifurs.breakwater` leaves the accessibility service unbound** and Android
   does not rebind it. Nothing in the harness may force-stop Nudge; blocking stays dead until the
   grant is re-applied.
 - **`pm clear` deletes `enabled_accessibility_services`**, and a write straight afterwards binds
@@ -240,7 +240,7 @@ walk with three commands: `reset` (every table, the in-memory passes, Strict Mod
 count, the a11y connection, debug logging, the walk-away counters).
 
 ```bash
-adb shell am broadcast -n dev.astraedus.nudge/com.astraedus.nudge.qa.QaControlReceiver \
+adb shell am broadcast -n dev.ifurs.breakwater/com.astraedus.nudge.qa.QaControlReceiver \
   -a dev.astraedus.nudge.qa.CMD --es cmd state
 ```
 

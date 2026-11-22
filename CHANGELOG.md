@@ -11,6 +11,7 @@ All notable changes to Nudge are documented here. Format follows [Keep a Changel
 - First-run setup has a new step, "What do you want to block?", after the permissions, with the same switches.
 
 ### Changed
+- **The fork is now called Breakwater.** New app name and install ID (`dev.ifurs.breakwater`), so it installs next to the Play and F-Droid Nudge instead of replacing it. Your rules, settings and data do not carry over: export them from Nudge and import them here. The Kotlin package, internal file names and Strict Mode behaviour are unchanged.
 - The "Active Apps / Manage" tile on Home is now "Apps with rules" with the number of apps that have a rule (an app with only a Reels or Shorts block counts too). The three big "Manage Apps / Usage Stats / Settings" cards are gone: the bottom bar replaces them.
 - An app's settings screen now starts with the part of the app you can block on its own (Reels, Shorts, the TikTok feed) under a plain headline such as "Block only Reels, keep the rest of Instagram", above "Default Behavior". Nothing else about how it works changed.
 - Manage Apps, Stats and Settings no longer have a back arrow, because they are main screens now.

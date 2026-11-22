@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.block
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.block.BlockLaunchGate.Arrival
 import com.astraedus.nudge.domain.block.BlockLaunchGate.Decision
 import com.astraedus.nudge.domain.block.BlockLaunchGate.LaunchStorm
@@ -36,7 +38,7 @@ class ArrivalAndStormGateTest {
     private val insta = "com.instagram.android"
     private val keep = "com.google.android.keep"
     private val launcher = "com.google.android.apps.nexuslauncher"
-    private val nudge = "dev.astraedus.nudge"
+    private val nudge = NudgeIdentity.APPLICATION_ID
 
     // ============================================================== confrontationKey ==========
 

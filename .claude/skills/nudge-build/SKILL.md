@@ -52,14 +52,12 @@ After re-recording Paparazzi goldens, Read the changed PNGs; revert goldens that
 adb -s "$DEVICE" install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-- **Signature conflict:** the debug build uses package `dev.astraedus.nudge`, the same as the Play Store
-  version. If Play Nudge is installed, install fails (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Ask Ivan before
-  uninstalling it — uninstalling wipes his rules (suggest Settings → Export first). A fork that should live
-  next to the Play app needs its own `applicationId` (see `nudge-develop`).
+- **Side by side with Nudge:** the fork is `dev.ifurs.breakwater`, so it installs next to the Play/F-Droid
+  Nudge (`dev.astraedus.nudge`) without a signature conflict. Their data is separate.
 - **`install -r` drops the accessibility grant.** Re-enable:
   ```bash
   adb -s "$DEVICE" shell settings put secure enabled_accessibility_services \
-    dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService
+    dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService
   adb -s "$DEVICE" shell settings put secure accessibility_enabled 1
   ```
   Note this overwrites the list; if Ivan uses other accessibility services, read the current value first and

@@ -22,7 +22,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.astraedus.nudge"
+        applicationId = "dev.ifurs.breakwater"
         minSdk = 26
         targetSdk = 36
         versionCode = 79
@@ -320,7 +320,7 @@ val allowedMergedPermissions = setOf(
     "android.permission.CAMERA", // QR / barcode scanner, requested at runtime (ui/qr/)
     "android.permission.WAKE_LOCK", // WorkManager
     "android.permission.ACCESS_NETWORK_STATE", // WorkManager constraint tracking; not network access
-    "dev.astraedus.nudge.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" // androidx.core, app-private
+    "dev.ifurs.breakwater.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" // androidx.core, app-private
 )
 
 abstract class VerifyMergedPermissionsTask : DefaultTask() {

@@ -89,8 +89,8 @@
     <string name="nuke_block_body">%1$s is off until you end Nuke. Scan your Nuke code to end it.</string>
 
     <!-- Strict Mode / Nuke escape-route guard (StrictModeGuardActivity) -->
-    <string name="lock_guard_prompt_nuke">Nuke is on, and this screen is a way around it. Type the code to change Nudge\'s system settings, or go back.</string>
-    <string name="lock_guard_prompt_strict">Strict Mode is protecting this screen. Unlock to change Nudge\'s system settings, or go back.</string>
+    <string name="lock_guard_prompt_nuke">Nuke is on, and this screen is a way around it. Type the code to change Breakwater\'s system settings, or go back.</string>
+    <string name="lock_guard_prompt_strict">Strict Mode is protecting this screen. Unlock to change Breakwater\'s system settings, or go back.</string>
     <string name="lock_guard_title_nuke">Nuke is on</string>
     <string name="lock_guard_title_strict">Strict Mode locked</string>
 

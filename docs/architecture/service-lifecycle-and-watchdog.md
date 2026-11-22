@@ -177,13 +177,13 @@ The screen also no longer rolls its own accessibility read. It used to ask
 `enabledServices.contains(context.packageName)` — a substring test that says yes for any component
 of ours and for any package whose name merely contains ours. Both it and the watchdog now go
 through `ProtectionStatus`, so they cannot disagree. Note the two package names in play:
-`applicationId` is `dev.astraedus.nudge` and `namespace` is `com.astraedus.nudge`, so any matcher
+`applicationId` is `dev.ifurs.breakwater` and `namespace` is `com.astraedus.nudge`, so any matcher
 assuming the class is a child of the package is wrong here.
 
 ## How to test this
 
 The watchdog's detection half is verifiable by hand; its **notification half was not**, and shipped
-once without ever having been seen to fire. `adb shell cmd jobscheduler run -f dev.astraedus.nudge
+once without ever having been seen to fire. `adb shell cmd jobscheduler run -f dev.ifurs.breakwater
 <jobId>` prints "Running job [FORCED]" and a `jobFinished` about 12ms later, but `doWork()` never
 executes: no `WM-WorkerWrapper: Worker result` line is ever emitted (reproduced three times on the
 Pixel 3). WorkManager will not run a periodic worker early. So the only way to watch the alert was
@@ -201,12 +201,12 @@ or if the receiver ever grows a signal read or a decision of its own.
 ```bash
 adb shell am broadcast \
   -a dev.astraedus.nudge.debug.RUN_WATCHDOG \
-  -n dev.astraedus.nudge/com.astraedus.nudge.service.WatchdogDebugReceiver
+  -n dev.ifurs.breakwater/com.astraedus.nudge.service.WatchdogDebugReceiver
 ```
 
 The explicit `-n` component is required, not decoration: a custom action is an *implicit* broadcast,
 and manifest-declared receivers have not received those since API 26. Note the two package names
-(`applicationId` is `dev.astraedus.nudge`, `namespace` is `com.astraedus.nudge`) - the component is
+(`applicationId` is `dev.ifurs.breakwater`, `namespace` is `com.astraedus.nudge`) - the component is
 one of each.
 
 The verdict comes back in the broadcast result, so you read the DECISION rather than inferring it
@@ -238,13 +238,13 @@ not a second code path - both go through the same `recordProtectionCheck` the ch
 ### Forcing each state
 
 The master toggle is Nudge's own switch on the Home screen. `X` below is the accessibility component
-`dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService`.
+`dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService`.
 
 | State | How to force it | Expected verdict |
 |---|---|---|
 | **Healthy** | Master toggle on, accessibility on. Confirm with `adb shell dumpsys accessibility \| grep -E "Enabled services\|Bound services"` - our component must be in BOTH. | `notify=none dismiss=true degradedNow=false` |
 | **Monitoring off** | Master toggle off in the app. | `global=false notify=none dismiss=true` - never nag a user who opted out. |
-| **Granted but not connected** (`ACCESSIBILITY_CRASHED`) | `adb shell am crash dev.astraedus.nudge` produces the state, but on an idle device it heals in 150ms-3s - see "What could NOT be verified" below before spending time here. Confirm with `adb shell dumpsys accessibility \| grep -E "Enabled services\|Bound services\|Crashed services"`: ours under Enabled, absent from Bound. | First broadcast: `connected=false notify=none degradedNow=true`. **Second**: `notify=ACCESSIBILITY_CRASHED`. Unverified on device to date. |
+| **Granted but not connected** (`ACCESSIBILITY_CRASHED`) | `adb shell am crash dev.ifurs.breakwater` produces the state, but on an idle device it heals in 150ms-3s - see "What could NOT be verified" below before spending time here. Confirm with `adb shell dumpsys accessibility \| grep -E "Enabled services\|Bound services\|Crashed services"`: ours under Enabled, absent from Bound. | First broadcast: `connected=false notify=none degradedNow=true`. **Second**: `notify=ACCESSIBILITY_CRASHED`. Unverified on device to date. |
 | **User-disabled** (`ACCESSIBILITY_DISABLED`) | Turn the toggle off in system Settings, or `adb shell settings put secure enabled_accessibility_services ""` - **record the old value first** (`settings get secure enabled_accessibility_services`), that key holds every service on the device, not just ours. | `granted=false notify=ACCESSIBILITY_DISABLED` on the FIRST broadcast - we cannot re-grant it, so waiting a cycle only costs the user 15 more minutes. |
 | **Foreground service dead** (`MONITOR_SERVICE_DEAD`) | Same `am crash`; `NudgeMonitorService.isRunning` is a static, so it comes back false in the new process. Reachable only with accessibility healthy, since the fault order is granted, then connected, then service. | First: `startService=true`. Second, if the restart did not hold: `notify=MONITOR_SERVICE_DEAD`. |
 
@@ -263,7 +263,7 @@ like the receiver not existing, so check these before concluding the trigger is 
    `am crash` per force-stop/relaunch cycle.**
 2. **Broadcasting at t+0 after a crash** can reach a receiver that runs before the process is ready
    to complete it, and no result data is set.
-3. Genuinely not installed: `adb shell dumpsys package dev.astraedus.nudge | grep -A5
+3. Genuinely not installed: `adb shell dumpsys package dev.ifurs.breakwater | grep -A5
    WatchdogDebugReceiver` shows nothing. That is the real failure, and it means a release build.
 
 ### What could NOT be verified on the bench, and why
@@ -304,7 +304,7 @@ adb shell dumpsys notification --noredact | grep -B2 -A12 nudge_protection_alert
 
 What to check:
 
-- **Posted**: a record with `pkg=dev.astraedus.nudge`, `id=2`, `channel=nudge_protection_alerts`.
+- **Posted**: a record with `pkg=dev.ifurs.breakwater`, `id=2`, `channel=nudge_protection_alerts`.
   Id 1 is the permanent monitor notification and is not this. The channel is separate on purpose:
   a user who mutes the silent ongoing one must not thereby mute this.
 - **Copy matches the fault**: `ACCESSIBILITY_CRASHED` says turn it off and back on, and must NEVER
@@ -316,7 +316,7 @@ What to check:
   line will read `dismiss=true`).
 
 If a check returns `notify=<FAULT>` and no record appears, the decision is fine and the POST is
-being dropped - check `POST_NOTIFICATIONS` (`adb shell dumpsys package dev.astraedus.nudge | grep
+being dropped - check `POST_NOTIFICATIONS` (`adb shell dumpsys package dev.ifurs.breakwater | grep
 POST_NOTIFICATIONS`). That distinction is exactly why the verdict is returned in the broadcast
 result and not inferred from the shade.
 
@@ -400,18 +400,18 @@ cost in the same honest shape, gated by `OverlayPermissionCopyTest`.
 ### Reproducing it on the bench
 
 ```bash
-adb shell appops set dev.astraedus.nudge SYSTEM_ALERT_WINDOW deny
-adb shell am force-stop dev.astraedus.nudge
+adb shell appops set dev.ifurs.breakwater SYSTEM_ALERT_WINDOW deny
+adb shell am force-stop dev.ifurs.breakwater
 adb shell am broadcast -a dev.astraedus.nudge.debug.RUN_WATCHDOG \
-  -n dev.astraedus.nudge/com.astraedus.nudge.service.WatchdogDebugReceiver --ez reset true
+  -n dev.ifurs.breakwater/com.astraedus.nudge.service.WatchdogDebugReceiver --ez reset true
 # first: startService=true, reported=none, "(service start REFUSED by platform)"
 adb shell am broadcast -a dev.astraedus.nudge.debug.RUN_WATCHDOG \
-  -n dev.astraedus.nudge/com.astraedus.nudge.service.WatchdogDebugReceiver
+  -n dev.ifurs.breakwater/com.astraedus.nudge.service.WatchdogDebugReceiver
 # second: reported=MONITOR_START_BLOCKED, and a notification on nudge_protection_alerts
 ```
 
 Then open Nudge: the resume retry starts the service, and
-`adb shell dumpsys activity services dev.astraedus.nudge | grep NudgeMonitorService` shows it
+`adb shell dumpsys activity services dev.ifurs.breakwater | grep NudgeMonitorService` shows it
 running again. Restore with `appops set ... allow`.
 
 **That recipe does not work as written on the bench Pixel 3 (API 31), measured 2026-09-29** while
@@ -515,7 +515,7 @@ worker's job) — and the confirming-cycle faults were always going to cost a se
 ### Measuring it on a device
 
 ```bash
-adb shell dumpsys notification --noredact | grep -c 'pkg=dev.astraedus.nudge'
+adb shell dumpsys notification --noredact | grep -c 'pkg=dev.ifurs.breakwater'
 ```
 
 Take that count, leave the phone idle with the screen off for ten minutes, take it again. The

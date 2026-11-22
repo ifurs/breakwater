@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Logs `(package, category)` for every launchable app on the device, on demand:
- * `adb shell am broadcast -a dev.astraedus.nudge.debug.LOG_CATEGORIES -n dev.astraedus.nudge/com.astraedus.nudge.service.CategoryCoverageDebugReceiver`.
+ * `adb shell am broadcast -a dev.astraedus.nudge.debug.LOG_CATEGORIES -n dev.ifurs.breakwater/com.astraedus.nudge.service.CategoryCoverageDebugReceiver`.
  * **Debug builds only**: this file is in the `debug` source set and its manifest entry is in
  * `src/debug/AndroidManifest.xml`, so neither exists in a release APK.
  *

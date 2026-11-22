@@ -4,10 +4,10 @@
          page in the system Settings by this exact text, and Settings draws the label in the SYSTEM
          language while Nudge may run in another (per-app language). One label means the match cannot
          fall between the two. -->
-    <string name="app_name">Nudge - App Blocker</string>
-    <string name="accessibility_service_description">Nudge відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування. Жодні дані не залишають ваш пристрій.</string>
-    <string name="notification_channel_name">Моніторинг Nudge</string>
-    <string name="notification_channel_description">Показує, коли Nudge активно стежить за застосунками</string>
+    <string name="app_name">Breakwater</string>
+    <string name="accessibility_service_description">Breakwater відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування. Жодні дані не залишають ваш пристрій.</string>
+    <string name="notification_channel_name">Моніторинг Breakwater</string>
+    <string name="notification_channel_description">Показує, коли Breakwater активно стежить за застосунками</string>
 
     <string name="bounce_checkin_channel_name">Нагадування про метання</string>
     <string name="bounce_checkin_channel_description">Нагадування, коли ви метаєтеся між застосунками чи заблокованими сайтами після блокування</string>
@@ -16,21 +16,21 @@
 
     <string name="protection_alert_channel_name">Сповіщення про захист</string>
     <string name="protection_alert_channel_description">Повідомляє, якщо блокування перестає працювати</string>
-    <string name="protection_alert_accessibility_title">Nudge перестав блокувати</string>
-    <string name="protection_alert_accessibility_body">Дозвіл служби спеціальних можливостей для Nudge вимкнено, тож застосунки не блокуються. Торкніться, щоб увімкнути його знову.</string>
-    <string name="protection_alert_crashed_title">Nudge перестав блокувати</string>
-    <string name="protection_alert_crashed_body">Телефон зупинив Nudge. Перемикач і далі показує «увімкнено», тож блокування само не відновиться — вимкніть і знову ввімкніть Nudge у налаштуваннях спеціальних можливостей або перезавантажте телефон. Торкніться, щоб побачити кроки.</string>
-    <string name="protection_alert_service_title">Телефон постійно зупиняє Nudge</string>
-    <string name="protection_alert_service_body">Nudge зупиняється у фоновому режимі, тож блокування може працювати нестабільно. Торкніться, щоб перевірити стан.</string>
-    <string name="protection_alert_blocked_title">Nudge не може перезапуститися сам</string>
-    <string name="protection_alert_blocked_body">Телефон не дає Nudge перезапускатися самостійно, тож блокування може працювати нестабільно. Якщо відкрити Nudge, він запуститься знову. Увімкнений дозвіл «Показ поверх інших застосунків» допомагає йому перезапускатися самому. Торкніться, щоб побачити кроки.</string>
+    <string name="protection_alert_accessibility_title">Breakwater перестав блокувати</string>
+    <string name="protection_alert_accessibility_body">Дозвіл служби спеціальних можливостей для Breakwater вимкнено, тож застосунки не блокуються. Торкніться, щоб увімкнути його знову.</string>
+    <string name="protection_alert_crashed_title">Breakwater перестав блокувати</string>
+    <string name="protection_alert_crashed_body">Телефон зупинив Breakwater. Перемикач і далі показує «увімкнено», тож блокування само не відновиться — вимкніть і знову ввімкніть Breakwater у налаштуваннях спеціальних можливостей або перезавантажте телефон. Торкніться, щоб побачити кроки.</string>
+    <string name="protection_alert_service_title">Телефон постійно зупиняє Breakwater</string>
+    <string name="protection_alert_service_body">Breakwater зупиняється у фоновому режимі, тож блокування може працювати нестабільно. Торкніться, щоб перевірити стан.</string>
+    <string name="protection_alert_blocked_title">Breakwater не може перезапуститися сам</string>
+    <string name="protection_alert_blocked_body">Телефон не дає Breakwater перезапускатися самостійно, тож блокування може працювати нестабільно. Якщо відкрити Breakwater, він запуститься знову. Увімкнений дозвіл «Показ поверх інших застосунків» допомагає йому перезапускатися самому. Торкніться, щоб побачити кроки.</string>
 
-    <string name="app_name_short">Nudge</string>
-    <string name="widget_today_label">Nudge: сьогодні</string>
+    <string name="app_name_short">Breakwater</string>
+    <string name="widget_today_label">Breakwater: сьогодні</string>
     <string name="widget_today_description">Екранний час, блокування та відмови від входу за сьогодні одним поглядом.</string>
-    <string name="widget_top_blocked_label">Nudge: найчастіше блоковано</string>
+    <string name="widget_top_blocked_label">Breakwater: найчастіше блоковано</string>
     <string name="widget_top_blocked_description">Які застосунки блокувалися найчастіше за останні 7 днів.</string>
-    <string name="widget_protection_label">Nudge: захист</string>
+    <string name="widget_protection_label">Breakwater: захист</string>
     <string name="widget_protection_description">Показує, чи ввімкнено блокування, і вмикає або вимикає його.</string>
     <string name="widget_today_title">Сьогодні</string>
     <string name="widget_today_screen_time">Екранний час</string>
@@ -47,7 +47,7 @@
     <string name="widget_protection_off">Блокування вимкнено</string>
     <string name="widget_protection_degraded">Не блокує</string>
     <string name="widget_protection_locked">Вимкніть у застосунку</string>
-    <string name="widget_open_app">Відкрити Nudge</string>
+    <string name="widget_open_app">Відкрити Breakwater</string>
     <string name="widget_pin_row_title">Додати віджет: %1$s</string>
     <string name="widget_pin_row_subtitle">Лише для збірок налагодження. Просить лаунчер закріпити саме цей віджет.</string>
     <string name="home_top_blocked_empty">За останні 7 днів нічого не блокувалося. Правила, які ви додасте, з’являться тут.</string>

@@ -15,8 +15,8 @@
     <string name="settings_perm_accessibility_desc">Потрібна, щоб визначати застосунок на передньому плані</string>
     <string name="settings_perm_accessibility_crashed">Увімкнено, але телефон її зупинив — вимкніть і ввімкніть знову, щоб відновити блокування.</string>
     <string name="settings_perm_overlay_title">Показ поверх інших застосунків</string>
-    <string name="settings_perm_overlay_granted">Показує екрани блокування й допомагає Nudge відновити захист, якщо Android зупинить його у фоновому режимі</string>
-    <string name="settings_perm_overlay_off">Вимкнено — Nudge не може показувати екрани блокування, а Android із більшою ймовірністю зупинить захист, доки ви не відкриєте застосунок знову</string>
+    <string name="settings_perm_overlay_granted">Показує екрани блокування й допомагає Breakwater відновити захист, якщо Android зупинить його у фоновому режимі</string>
+    <string name="settings_perm_overlay_off">Вимкнено — Breakwater не може показувати екрани блокування, а Android із більшою ймовірністю зупинить захист, доки ви не відкриєте застосунок знову</string>
     <string name="settings_perm_usage_title">Доступ до статистики використання</string>
     <string name="settings_perm_usage_desc">Потрібен, щоб відстежувати використання застосунків</string>
     <string name="settings_perm_grayscale_title">Дозвіл для відтінків сірого</string>
@@ -62,7 +62,7 @@
 
     <string name="settings_bounce_title">Bro. wtf.</string>
     <string name="settings_bounce_subtitle">Отримуйте нагадування, коли метаєтеся між застосунками чи заблокованими сайтами після блокування.</string>
-    <string name="settings_bounce_blocked_subtitle">Сповіщення для Nudge вимкнено, тож вони не дійдуть до вас. Торкніться, щоб увімкнути.</string>
+    <string name="settings_bounce_blocked_subtitle">Сповіщення для Breakwater вимкнено, тож вони не дійдуть до вас. Торкніться, щоб увімкнути.</string>
     <string name="settings_phone_nudge_title">Нагадування про телефон</string>
     <plurals name="settings_phone_nudge_subtitle">
         <item quantity="one">Після %1$d хвилини в телефоні поспіль показувати екран паузи. Враховує всі застосунки.</item>
@@ -98,7 +98,7 @@
     <string name="settings_backup_import_desc">Відновити з файлу резервної копії. Наявні правила не змінюються.</string>
 
     <string name="settings_version_title">Версія</string>
-    <string name="settings_version_desc">Nudge v%1$s (збірка %2$d)</string>
+    <string name="settings_version_desc">Breakwater v%1$s (збірка %2$d)</string>
     <string name="settings_developer_enabled">Параметри розробника ввімкнено</string>
     <string name="settings_source_title">Вихідний код і відгуки</string>
     <string name="settings_source_desc">Відкритий код на GitHub. Повідомляйте про помилки або пропонуйте нові функції.</string>

@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.block
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.block.BlockLaunchGate.Decision
 import com.astraedus.nudge.domain.block.BlockLaunchGate.WalkAway
 import com.astraedus.nudge.domain.events.A11yEventType
@@ -27,7 +29,7 @@ class BlockLaunchGateTest {
 
     private val blocked = "com.instagram.android"
     private val launcher = "com.google.android.apps.nexuslauncher"
-    private val nudge = "dev.astraedus.nudge"
+    private val nudge = NudgeIdentity.APPLICATION_ID
     private val other = "com.google.android.keep"
 
     // --- the foreground condition (issue #31) ---------------------------------------------------

@@ -46,7 +46,7 @@ class InstalledAppsRepositoryTest {
 
     /**
      * The REAL applicationId, never the namespace. `InstalledAppsRepository` filters on
-     * `context.packageName`, which at runtime is `dev.astraedus.nudge`; typing
+     * `context.packageName`, which at runtime is `dev.ifurs.breakwater`; typing
      * `com.astraedus.nudge` here made both sides of the filter agree on a value no device ever
      * produces, which is the fixture dishonesty that hid issue #33 for months
      * (`docs/testing-strategy.md` rule (b)).

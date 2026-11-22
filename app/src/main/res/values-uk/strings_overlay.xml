@@ -59,12 +59,12 @@
     <string name="overlay_pip_heading">Картинка в картинці</string>
     <string name="overlay_pip_this_app">Цей застосунок</string>
     <string name="overlay_pip_this_app_object">цього застосунку</string>
-    <string name="overlay_pip_explain">%1$s: відтворення триває в плаваючому вікні «картинка в картинці», тож блокування Nudge не може його закрити. Android не дозволяє застосунку вимкнути це за вас.</string>
-    <string name="overlay_pip_turn_off">Вимкніть «картинку в картинці» для %1$s, і Nudge зможе заблокувати його належним чином.</string>
+    <string name="overlay_pip_explain">%1$s: відтворення триває в плаваючому вікні «картинка в картинці», тож блокування Breakwater не може його закрити. Android не дозволяє застосунку вимкнути це за вас.</string>
+    <string name="overlay_pip_turn_off">Вимкніть «картинку в картинці» для %1$s, і Breakwater зможе заблокувати його належним чином.</string>
     <string name="overlay_pip_open_settings">Відкрити налаштування «Картинка в картинці»</string>
     <string name="overlay_pip_settings_path">Налаштування &gt; Застосунки &gt; Спеціальний доступ &gt; Картинка в картинці</string>
     <string name="overlay_pip_not_now">Не зараз</string>
-    <string name="overlay_pip_once">Nudge показує це лише раз для кожного застосунку.</string>
+    <string name="overlay_pip_once">Breakwater показує це лише раз для кожного застосунку.</string>
 
     <string name="overlay_rule_scheduled">за розкладом</string>
     <string name="overlay_rule_per_day">%1$d хв/день</string>

@@ -35,11 +35,11 @@
     <string name="components_minutes_field_invalid">Enter 1-%1$d minutes, or leave blank for off</string>
 
     <!-- Prominent disclosure for the accessibility service (Play policy, docs/play-store.md). -->
-    <string name="components_disclosure_title">How Nudge Works</string>
-    <string name="components_disclosure_what">Nudge uses Android\'s Accessibility Service to detect which app is currently open on your screen.</string>
-    <string name="components_disclosure_why">This lets Nudge show breathing exercises, delays, or blocks when you open apps you\'ve chosen to limit.</string>
-    <string name="components_disclosure_reads">Nudge only reads the name of the app in the foreground. It does not read your messages, keystrokes, passwords, or screen content.</string>
-    <string name="components_disclosure_local">All data stays on your device. Nudge has no internet permission and cannot send data anywhere.</string>
+    <string name="components_disclosure_title">How Breakwater Works</string>
+    <string name="components_disclosure_what">Breakwater uses Android\'s Accessibility Service to detect which app is currently open on your screen.</string>
+    <string name="components_disclosure_why">This lets Breakwater show breathing exercises, delays, or blocks when you open apps you\'ve chosen to limit.</string>
+    <string name="components_disclosure_reads">Breakwater only reads the name of the app in the foreground. It does not read your messages, keystrokes, passwords, or screen content.</string>
+    <string name="components_disclosure_local">All data stays on your device. Breakwater has no internet permission and cannot send data anywhere.</string>
     <string name="components_disclosure_confirm">I Understand</string>
     <string name="components_disclosure_dismiss">Not Now</string>
 
@@ -139,7 +139,7 @@
     <string name="components_usage_reminder_title">Usage reminder</string>
     <string name="components_usage_reminder_field_label">Remind me after</string>
     <string name="components_usage_reminder_field_supporting">Counts time in the app in one sitting. One heads-up, nothing closes.</string>
-    <string name="components_usage_reminder_blocked_warning">Notifications are off for Nudge, so this reminder can\'t reach you. Tap to turn them on.</string>
+    <string name="components_usage_reminder_blocked_warning">Notifications are off for Breakwater, so this reminder can\'t reach you. Tap to turn them on.</string>
     <string name="components_usage_reminder_superseded">Auto-kick at %1$d min comes first, so this reminder won\'t show. Set it below %1$d min to get both.</string>
     <string name="components_usage_reminder_info">Get one gentle notification once you\'ve spent this long in the app in one sitting. It doesn\'t close anything, it just lets you know.\n\nIt resets the same way auto-kick does: a short trip to another app keeps the sitting going, a real break (5 minutes or more) starts a new one. If auto-kick by time is set for the same or a shorter time, auto-kick wins and the reminder is skipped.</string>
     <string name="components_usage_reminder_info_apps_only">Apps only: it does not cover the websites below.</string>

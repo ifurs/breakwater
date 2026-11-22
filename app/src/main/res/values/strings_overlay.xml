@@ -64,12 +64,12 @@
     <string name="overlay_pip_heading">Picture-in-picture</string>
     <string name="overlay_pip_this_app">This app</string>
     <string name="overlay_pip_this_app_object">This app</string>
-    <string name="overlay_pip_explain">%1$s kept playing in a floating picture-in-picture window, so Nudge\'s block could not cover it. Android does not let an app switch that off for you.</string>
-    <string name="overlay_pip_turn_off">Turn off picture-in-picture for %1$s and Nudge can block it properly.</string>
+    <string name="overlay_pip_explain">%1$s kept playing in a floating picture-in-picture window, so Breakwater\'s block could not cover it. Android does not let an app switch that off for you.</string>
+    <string name="overlay_pip_turn_off">Turn off picture-in-picture for %1$s and Breakwater can block it properly.</string>
     <string name="overlay_pip_open_settings">Open picture-in-picture settings</string>
     <string name="overlay_pip_settings_path">Settings &gt; Apps &gt; Special app access &gt; Picture-in-picture</string>
     <string name="overlay_pip_not_now">Not now</string>
-    <string name="overlay_pip_once">Nudge only shows this once for each app.</string>
+    <string name="overlay_pip_once">Breakwater only shows this once for each app.</string>
 
     <!-- The "Rule: ..." line (see RuleLabelText): "Reels - Delay (scheduled, 30 min/day)" -->
     <string name="overlay_rule_scheduled">scheduled</string>

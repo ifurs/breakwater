@@ -683,7 +683,7 @@ class RuleExporter @Inject constructor() {
                 "Names an app or a group as well as all apps"
             }
         } else {
-            require(firstUnlockMinutes != null) { "Needs a newer version of Nudge" }
+            require(firstUnlockMinutes != null) { "Needs a newer version of Breakwater" }
             // Same invariant `rules` enforces: exactly one target. A row naming both would be
             // refused by the repository on write, and a row naming NEITHER would be written as a
             // rule that targets nothing, which the repository now refuses too.

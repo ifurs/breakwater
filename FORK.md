@@ -1,6 +1,6 @@
-# Ivan's fork of Nudge
+# Breakwater: Ivan's fork of Nudge
 
-This repository (`ifurs/nudge`) is a personal fork of [astraedus/nudge](https://github.com/astraedus/nudge),
+Breakwater (this repository, `ifurs/breakwater`) is a personal fork of [astraedus/nudge](https://github.com/astraedus/nudge),
 released free, offline and under GPL-3.0. Upstream's `CLAUDE.md` stays the reference for architecture and
 testing; this file says where the fork differs and how to work on it. **When the two disagree, this file
 wins.**
@@ -72,16 +72,17 @@ Test layers L1–L6 and what each change needs: `docs/testing-strategy.md`.
 1. Developer options → USB debugging (or Wireless debugging → pair with code: `adb pair IP:PORT`, then
    `adb connect IP:PORT`).
 2. `adb devices`, then `adb -s <serial> install -r app/build/outputs/apk/debug/app-debug.apk`.
-3. Turn on Nudge's accessibility service. A sideloaded app may need App info → ⋮ → *Allow restricted
+3. Turn on Breakwater's accessibility service. A sideloaded app may need App info → ⋮ → *Allow restricted
    settings* first. `install -r` drops the grant; re-enable it after each install.
-4. The Play/F-Droid Nudge uses the same `applicationId` (`dev.astraedus.nudge`) with another signature, so
-   it must be removed first (export your rules in its Settings before that).
+4. Breakwater's `applicationId` is `dev.ifurs.breakwater`, so it no longer clashes with the Play/F-Droid
+   Nudge (`dev.astraedus.nudge`) and can be installed next to it. Its data is separate: to move your rules,
+   export them in Nudge's Settings and import them in Breakwater.
 
 Debugging detection, logs and accessibility captures: `.claude/skills/nudge-debug/SKILL.md`.
 
 ## Branches and syncing with upstream
 
-- Remotes: `origin` = upstream `astraedus/nudge` (read-only for us), `fork` = `ifurs/nudge`.
+- Remotes: `origin` = upstream `astraedus/nudge` (read-only for us), `fork` = `ifurs/breakwater`.
 - Work on `feature/<name>` or `fix/<name>` branches, merge into the fork's main line, push to `fork`.
 - Pull upstream regularly, by merge (never rebase published branches):
   ```bash
@@ -95,12 +96,12 @@ Debugging detection, logs and accessibility captures: `.claude/skills/nudge-debu
 
 ## Releasing the fork (when Ivan decides)
 
-1. Pick a name and an `applicationId` of our own (e.g. `dev.ifurs.<name>`) in `app/build.gradle.kts`; keep
-   `namespace` `com.astraedus.nudge`. Update `app_name` (identical in `values` and `values-uk`, see
-   `docs/i18n.md`) and every hard-coded `dev.astraedus.nudge/...` in `scripts/` and `.claude/skills/`.
+1. Done: the fork is named Breakwater with `applicationId` `dev.ifurs.breakwater` in `app/build.gradle.kts`;
+   `namespace` stays `com.astraedus.nudge`. `app_name` is identical in `values` and `values-uk` (see
+   `docs/i18n.md`); scripts, skills and tests use the new ID (tests read it from `NudgeIdentity`).
 2. Make our own release keystore; keep it and `keystore.properties` out of git. Losing it means users can
    never update.
-3. `./gradlew assembleRelease`, then publish on GitHub Releases of `ifurs/nudge` (Obtainium can track it)
+3. `./gradlew assembleRelease`, then publish on GitHub Releases of `ifurs/breakwater` (Obtainium can track it)
    or submit to F-Droid as a separate app.
 
 ## Claude Code in this repo

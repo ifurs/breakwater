@@ -150,7 +150,7 @@ set -uo pipefail
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_ID="dev.astraedus.nudge"
+APP_ID="dev.ifurs.breakwater"
 NAMESPACE="com.astraedus.nudge"
 A11Y_COMPONENT="${APP_ID}/${NAMESPACE}.service.NudgeAccessibilityService"
 WATCHDOG_RECEIVER="${APP_ID}/${NAMESPACE}.service.WatchdogDebugReceiver"
@@ -467,14 +467,14 @@ pin_screen() {
 # system accessibility Settings list reliably, so the grant itself is set here.
 
 # Bound means Nudge is on the `Bound services:` line ITSELF. That line names a service by its
-# label (`Service[label=Nudge - App Blocker, ...]`), never by class; the class name is on the
+# label (`Service[label=Breakwater, ...]`), never by class; the class name is on the
 # `Enabled services:` line just below it. The old `grep -A3 'Bound services' | grep
 # NudgeAccessibilityService` therefore matched the ENABLED line, so it said "bound" whenever the
 # grant was on, including while a UiAutomation session had suppressed the service (the exact
 # state it was meant to catch). Same rule as qa-driver's DeviceText.isNudgeBound.
 a11y_is_bound() {
   ash dumpsys accessibility 2>/dev/null |
-    tr -d '\r' | grep -m1 'Bound services:' | grep -q 'label=Nudge'
+    tr -d '\r' | grep -m1 'Bound services:' | grep -q 'label=Breakwater'
 }
 
 # Turns the accessibility grant OFF, and PROVES it went off. Returns 1 if it could not.
@@ -1065,7 +1065,7 @@ log_count_re() { # same, for a pattern that needs a regex
 #
 # Deliberately does NOT force-stop Nudge first.
 #
-# `am force-stop dev.astraedus.nudge` leaves the accessibility service UNBOUND and Android
+# `am force-stop dev.ifurs.breakwater` leaves the accessibility service UNBOUND and Android
 # does not rebind it — measured on the bench: after a force-stop, a YouTube launch produced
 # no evaluation at all and `Bound services:{}` stayed empty until the grant was re-applied.
 # So a force-stop here would silently disarm every later case. The dashboard's ViewModels
@@ -2650,7 +2650,7 @@ CRASH_BASELINE=""
 # `dumpsys dropbox` also holds `system_server_wtf` entries — the SYSTEM's own soft assertions — and
 # several of them name whatever app they were about. Measured on 2026-09-29: this run's `pm clear`
 # raced a scheduled `androidx.work` job and the JobScheduler logged
-# `Hasn't been prepared: JobStatus{… dev.astraedus.nudge/…SystemJobService …}`, so the old count
+# `Hasn't been prepared: JobStatus{… dev.ifurs.breakwater/…SystemJobService …}`, so the old count
 # rose by one and `crash-check` FAILED on a run where `Crashed services:{}` was empty and the app
 # never died once. A gate that reports the harness's own side effects as app crashes gets ignored,
 # which is the only way a crash gate can really fail.

@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.surfaces
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.events.ForegroundSignal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,7 +20,7 @@ import org.junit.Test
 class TabCoverPresenceTest {
 
     private val host = "com.instagram.android"
-    private val own = "dev.astraedus.nudge"
+    private val own = NudgeIdentity.APPLICATION_ID
 
     // -----------------------------------------------------------------------------------------
     // Signals that DO make a claim about the foreground

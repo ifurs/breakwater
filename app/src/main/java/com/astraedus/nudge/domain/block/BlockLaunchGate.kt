@@ -817,7 +817,7 @@ object BlockLaunchGate {
     /**
      * The Kotlin NAMESPACE every class this app ships lives in, which is NOT its applicationId.
      *
-     * `namespace = "com.astraedus.nudge"`, `applicationId = "dev.astraedus.nudge"`
+     * `namespace = "com.astraedus.nudge"`, `applicationId = "dev.ifurs.breakwater"`
      * (`app/build.gradle.kts`). Accessibility events carry the applicationId as the package and a
      * class name from the namespace, so the two are never interchangeable — and treating them as
      * interchangeable is [#33](https://github.com/astraedus/nudge/issues/33): the service asked

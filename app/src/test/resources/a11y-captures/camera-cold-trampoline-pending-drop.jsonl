@@ -20,7 +20,7 @@
 #      duplicate, though Camera's own task has buried it. TrampolineLaunchReplayTest makes those
 #      three decisions at these events (the service's decisions are not in the trace).
 {"t":"WINDOW_STATE_CHANGED","p":"com.google.android.GoogleCamera","c":"android.widget.FrameLayout","w":5907,"ts":2388033359,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
-{"t":"WINDOW_STATE_CHANGED","p":"dev.astraedus.nudge","c":"android.widget.FrameLayout","w":5908,"ts":2388033497,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
+{"t":"WINDOW_STATE_CHANGED","p":"dev.ifurs.breakwater","c":"android.widget.FrameLayout","w":5908,"ts":2388033497,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
 {"t":"WINDOW_STATE_CHANGED","p":"com.google.android.permissioncontroller","c":"com.android.permissioncontroller.permission.ui.GrantPermissionsActivity","w":5910,"ts":2388033673,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":0}
 {"t":"WINDOW_CONTENT_CHANGED","p":"com.android.systemui","c":"android.widget.FrameLayout","w":5875,"ts":2388033681,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":1}
 {"t":"WINDOW_CONTENT_CHANGED","p":"com.google.android.GoogleCamera","c":"android.view.ViewGroup","w":5909,"ts":2388033738,"fi":-1,"ti":-1,"ci":-1,"n":-1,"dx":-1,"dy":-1,"sx":0,"sy":0,"mx":0,"my":0,"cct":1}

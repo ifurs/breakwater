@@ -16,8 +16,8 @@
     <string name="settings_perm_accessibility_desc">Required to detect foreground apps</string>
     <string name="settings_perm_accessibility_crashed">Enabled, but your phone stopped it — turn it off and back on to restart blocking.</string>
     <string name="settings_perm_overlay_title">Overlay Permission</string>
-    <string name="settings_perm_overlay_granted">Shows block screens and helps Nudge restart protection if Android stops it in the background</string>
-    <string name="settings_perm_overlay_off">Off — Nudge can\'t show block screens, and Android is more likely to stop protection until you reopen the app</string>
+    <string name="settings_perm_overlay_granted">Shows block screens and helps Breakwater restart protection if Android stops it in the background</string>
+    <string name="settings_perm_overlay_off">Off — Breakwater can\'t show block screens, and Android is more likely to stop protection until you reopen the app</string>
     <string name="settings_perm_usage_title">Usage Stats Access</string>
     <string name="settings_perm_usage_desc">Required to track app usage</string>
     <string name="settings_perm_grayscale_title">Grayscale Permission</string>
@@ -67,7 +67,7 @@
     <!-- Check-ins -->
     <string name="settings_bounce_title">Bro. wtf.</string>
     <string name="settings_bounce_subtitle">Get a nudge when you bounce between apps or blocked sites after hitting a wall.</string>
-    <string name="settings_bounce_blocked_subtitle">Notifications are off for Nudge, so these can\'t reach you. Tap to turn them on.</string>
+    <string name="settings_bounce_blocked_subtitle">Notifications are off for Breakwater, so these can\'t reach you. Tap to turn them on.</string>
     <string name="settings_phone_nudge_title">Phone nudge</string>
     <plurals name="settings_phone_nudge_subtitle">
         <item quantity="one">After %1$d minute on your phone in one go, show a pause screen. Counts every app.</item>
@@ -104,7 +104,7 @@
 
     <!-- About and developer options -->
     <string name="settings_version_title">Version</string>
-    <string name="settings_version_desc">Nudge v%1$s (build %2$d)</string>
+    <string name="settings_version_desc">Breakwater v%1$s (build %2$d)</string>
     <string name="settings_developer_enabled">Developer options enabled</string>
     <string name="settings_source_title">Source Code &amp; Feedback</string>
     <string name="settings_source_desc">Open source on GitHub. Report bugs or suggest features.</string>

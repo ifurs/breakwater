@@ -17,9 +17,9 @@ produce. Reproduce on the phone and record it **before** designing a fix. Read
 ## 1. Is the service even running?
 
 ```bash
-a shell settings get secure enabled_accessibility_services   # must contain dev.astraedus.nudge/...NudgeAccessibilityService
+a shell settings get secure enabled_accessibility_services   # must contain dev.ifurs.breakwater/...NudgeAccessibilityService
 a shell dumpsys accessibility | grep -A3 'Bound services'     # must list Nudge
-a shell dumpsys activity services dev.astraedus.nudge | grep -E 'ServiceRecord|isForeground'
+a shell dumpsys activity services dev.ifurs.breakwater | grep -E 'ServiceRecord|isForeground'
 a shell dumpsys deviceidle whitelist | grep nudge             # battery optimisation exemption
 ```
 
@@ -34,7 +34,7 @@ release since 1.22.4, so tags are never inferred from class names) — grep the 
 
 ```bash
 a logcat -c
-a logcat --pid="$(a shell pidof -s dev.astraedus.nudge | tr -d '\r')" -v time
+a logcat --pid="$(a shell pidof -s dev.ifurs.breakwater | tr -d '\r')" -v time
 a logcat -v time | grep -E 'InAppDetector|NudgeAccessibilityService|BlockEngine|AndroidRuntime'
 a logcat -b crash -d                                            # crashes
 ```

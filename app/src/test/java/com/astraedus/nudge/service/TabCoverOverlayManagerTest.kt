@@ -1,5 +1,7 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.testing.enString
 import android.content.Context
 import android.view.WindowManager
@@ -244,7 +246,7 @@ class TabCoverOverlayManagerTest {
     @Test
     fun `an awareness overlay signal does not tear the cover down`() {
         show()
-        manager.onForegroundSignal(ForegroundSignal.AwarenessOverlay("dev.astraedus.nudge"))
+        manager.onForegroundSignal(ForegroundSignal.AwarenessOverlay(NudgeIdentity.APPLICATION_ID))
 
         verify(exactly = 0) { windowManager.removeView(any()) }
         assertTrue("the cover must not order itself away on its own window event", manager.isVisible())

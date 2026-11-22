@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.lock
 
+import com.astraedus.nudge.R
+import com.astraedus.nudge.testing.enString
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,8 +11,9 @@ import org.junit.Test
  *
  * The window-text fixtures below are the REAL, concatenated visible text harvested from a Pixel 3
  * (Android 12, AOSP/Pixel Settings) on 2026-06-24 via `astra-adb dump`, app label
- * "Nudge - App Blocker". Keeping them real is the whole point: the matcher is only as good as the
- * actual node signatures it keys on.
+ * "Nudge - App Blocker" (the fork renamed the label, so the label text in these fixtures was
+ * swapped for "Breakwater"; every other word is as captured). Keeping them real is the whole
+ * point: the matcher is only as good as the actual node signatures it keys on.
  *
  * Safety bias under test: the matcher must guard the two escape routes, must NOT trap the user on
  * the accessibility LIST page (which also shows our label) or on unrelated Settings pages, and must
@@ -18,21 +21,22 @@ import org.junit.Test
  */
 class StrictModeEscapeGuardTest {
 
-    private val label = "Nudge - App Blocker"
+    // The shipped label, read from res/values/strings.xml: the real captures below must contain it.
+    private val label = enString(R.string.app_name)
     private val settingsPkg = "com.android.settings"
 
-    /** Real text from the Nudge Accessibility detail page (where the service toggle lives). */
+    /** Real text from the Breakwater Accessibility detail page (where the service toggle lives). */
     private val accessibilityDetailText = """
-        Use Nudge - App Blocker
-        Nudge - App Blocker shortcut
-        Nudge monitors which app is in the foreground to apply your blocking rules. No data leaves your device.
+        Use Breakwater
+        Breakwater shortcut
+        Breakwater monitors which app is in the foreground to apply your blocking rules. No data leaves your device.
         Options
         Off
     """.trimIndent()
 
-    /** Real text from the Nudge App Info page (Force stop / Uninstall). */
+    /** Real text from the Breakwater App Info page (Force stop / Uninstall). */
     private val appInfoText = """
-        Nudge - App Blocker
+        Breakwater
         Open
         Uninstall
         Force stop
@@ -45,7 +49,7 @@ class StrictModeEscapeGuardTest {
     /** Real text from the Accessibility LIST page — shows our label but must NOT be guarded. */
     private val accessibilityListText = """
         Downloaded apps
-        Nudge - App Blocker
+        Breakwater
         Off
         TalkBack
         Screen reader
@@ -148,7 +152,7 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `accessibility LIST page is NOT guarded even though it shows our label`() {
-        // Critical: the list of all accessibility services contains "Nudge - App Blocker" but no
+        // Critical: the list of all accessibility services contains "Breakwater" but no
         // "shortcut"/"Use <label>"/force-stop/uninstall signal. Guarding here would trap the user.
         assertFalse(
             StrictModeEscapeGuard.shouldGuardSettingsScreen(
@@ -229,16 +233,16 @@ class StrictModeEscapeGuardTest {
 
     /** The accessibility detail page of a Ukrainian phone: "Використовувати ...", "Ярлик ...". */
     private val ukAccessibilityDetailText = """
-        Використовувати Nudge - App Blocker
-        Ярлик Nudge - App Blocker
-        Nudge відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування.
+        Використовувати Breakwater
+        Ярлик Breakwater
+        Breakwater відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування.
         Параметри
         Вимкнено
     """.trimIndent()
 
     /** A Ukrainian App Info page (Pixel wording). */
     private val ukAppInfoText = """
-        Nudge - App Blocker
+        Breakwater
         Відкрити
         Видалити
         Примусово зупинити
@@ -250,13 +254,23 @@ class StrictModeEscapeGuardTest {
     /** The Ukrainian accessibility LIST: shows our label, no detail signal, must stay unguarded. */
     private val ukAccessibilityListText = """
         Завантажені застосунки
-        Nudge - App Blocker
+        Breakwater
         Вимкнено
         TalkBack
         Зчитувач екрана
         Текст і дисплей
         Додатковий приглушений екран
     """.trimIndent()
+
+    /** A synthetic multi-word label, to exercise the normaliser (the shipped label is one word). */
+    private fun guardsLabel(label: String, text: String) =
+        StrictModeEscapeGuard.shouldGuardSettingsScreen(
+            foregroundPkg = settingsPkg,
+            windowText = text,
+            appLabel = label,
+            strictEnabled = true,
+            withinGrace = false
+        )
 
     private fun guards(text: String, pkg: String = settingsPkg) =
         StrictModeEscapeGuard.shouldGuardSettingsScreen(
@@ -274,7 +288,7 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `ukrainian detail page is guarded by the use-label row alone, without the shortcut word`() {
-        assertTrue(guards("Використовувати Nudge - App Blocker\nВимкнено"))
+        assertTrue(guards("Використовувати Breakwater\nВимкнено"))
     }
 
     @Test
@@ -287,7 +301,7 @@ class StrictModeEscapeGuardTest {
         assertTrue(
             guards(
                 """
-                Nudge - App Blocker
+                Breakwater
                 Відкрити
                 Примусова зупинка
                 Сповіщення
@@ -299,7 +313,7 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `ukrainian uninstall alone with our label -- guard`() {
-        assertTrue(guards("Nudge - App Blocker\nВидалити"))
+        assertTrue(guards("Breakwater\nВидалити"))
     }
 
     @Test
@@ -330,50 +344,42 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `ukrainian use-service toggle, stop and quick-enable wording -- guard`() {
-        assertTrue(guards("Використовувати сервіс Nudge - App Blocker\nВимкнено"))
-        assertTrue(guards("Nudge - App Blocker\nЗупинити"))
-        assertTrue(guards("Nudge - App Blocker\nШвидке ввімкнення"))
+        assertTrue(guards("Використовувати сервіс Breakwater\nВимкнено"))
+        assertTrue(guards("Breakwater\nЗупинити"))
+        assertTrue(guards("Breakwater\nШвидке ввімкнення"))
     }
 
     // ── Unicode noise in the Settings text ──
 
     @Test
     fun `no-break and narrow no-break spaces inside a signal or the label do not hide the page`() {
-        assertTrue(guards("Nudge - App Blocker\nПримусова\u00A0зупинка"))
-        assertTrue(guards("Nudge - App Blocker\nПримусова\u202Fзупинка"))
-        assertTrue(guards("Nudge - App Blocker\nForce\u00A0stop"))
-        assertTrue(guards("Nudge\u00A0-\u00A0App\u00A0Blocker\nForce stop"))
-        assertTrue(guards("Nudge\u202F-\u202FApp\u202FBlocker\nПримусова\u2007зупинка"))
-        assertTrue(guards("Використовувати\u00A0Nudge - App Blocker\nВимкнено"))
+        assertTrue(guards("Breakwater\nПримусова\u00A0зупинка"))
+        assertTrue(guards("Breakwater\nПримусова\u202Fзупинка"))
+        assertTrue(guards("Breakwater\nForce\u00A0stop"))
+        assertTrue(guardsLabel("Calm - Test App", "Calm\u00A0-\u00A0Test\u00A0App\nForce stop"))
+        assertTrue(guardsLabel("Calm - Test App", "Calm\u202F-\u202FTest\u202FApp\nПримусова\u2007зупинка"))
+        assertTrue(guards("Використовувати\u00A0Breakwater\nВимкнено"))
     }
 
     @Test
     fun `a no-break space inside the app label from PackageManager still matches the plain label`() {
-        assertTrue(
-            StrictModeEscapeGuard.shouldGuardSettingsScreen(
-                foregroundPkg = settingsPkg,
-                windowText = appInfoText,
-                appLabel = "Nudge\u00A0-\u00A0App Blocker",
-                strictEnabled = true,
-                withinGrace = false
-            )
-        )
+        assertTrue(guardsLabel("Calm\u00A0-\u00A0Test App", "Calm - Test App\nUninstall\nForce stop"))
     }
 
     @Test
     fun `runs of whitespace and zero-width characters collapse`() {
-        assertTrue(guards("Nudge  -   App Blocker\nForce \t  stop"))
-        assertTrue(guards("Nudge - App Blocker\nFor\u200Bce stop"))
+        assertTrue(guardsLabel("Calm - Test App", "Calm  -   Test App\nForce \t  stop"))
+        assertTrue(guards("Breakwater\nFor\u200Bce stop"))
     }
 
     @Test
     fun `a button word with stray no-break spaces around it is still the button`() {
-        assertTrue(guards("Nudge - App Blocker\n\u00A0Видалити\u202F"))
+        assertTrue(guards("Breakwater\n\u00A0Видалити\u202F"))
     }
 
     @Test
     fun `typographic and plain apostrophes in the label are the same`() {
-        val settingsLabel = "Nudge’s Blocker" // right single quote, as a Settings string may draw it
+        val settingsLabel = "Breakwater’s Blocker" // right single quote, as a Settings string may draw it
         fun guardsWith(label: String, text: String) = StrictModeEscapeGuard.shouldGuardSettingsScreen(
             foregroundPkg = settingsPkg,
             windowText = text,
@@ -381,9 +387,9 @@ class StrictModeEscapeGuardTest {
             strictEnabled = true,
             withinGrace = false
         )
-        assertTrue(guardsWith("Nudge's Blocker", "$settingsLabel\nForce stop"))
-        assertTrue(guardsWith("Nudge\u02BCs Blocker", "Nudge's Blocker\nForce stop"))
-        assertTrue(guardsWith(settingsLabel, "Nudge's Blocker\nВидалити"))
+        assertTrue(guardsWith("Breakwater's Blocker", "$settingsLabel\nForce stop"))
+        assertTrue(guardsWith("Breakwater\u02BCs Blocker", "Breakwater's Blocker\nForce stop"))
+        assertTrue(guardsWith(settingsLabel, "Breakwater's Blocker\nВидалити"))
     }
 
     // ── "Delete data" on a storage sub-page is not the uninstall button ──
@@ -395,32 +401,32 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `storage sub-page with Видалити дані is not guarded`() {
-        assertFalse(guards("Nudge - App Blocker\nВидалити дані\nОчистити кеш\nВикористано 12 МБ"))
+        assertFalse(guards("Breakwater\nВидалити дані\nОчистити кеш\nВикористано 12 МБ"))
     }
 
     @Test
     fun `the same storage page with the real buttons next to it is still guarded`() {
-        assertTrue(guards("Nudge - App Blocker\nВидалити дані\nВидалити"))
+        assertTrue(guards("Breakwater\nВидалити дані\nВидалити"))
     }
 
     // ── Captured on a real Android 15 Ukrainian Settings (the emulator) ──
     //
     // Node texts read off the Android 15 emulator (AOSP Settings, language uk) on 2026-11-18, app
-    // label "Nudge - App Blocker". Unlike the fixtures above they are not reconstructed from memory.
+    // label "Breakwater". Unlike the fixtures above they are not reconstructed from memory.
 
     /** Accessibility detail page, as captured: the shortcut row reads "<label>: швидкий доступ". */
     private val capturedUkAccessibilityDetail = """
-        Використовувати Nudge - App Blocker
+        Використовувати Breakwater
         Параметри
-        Nudge - App Blocker: швидкий доступ
+        Breakwater: швидкий доступ
         Вимкнено
-        Nudge відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування. Жодні дані не залишають ваш пристрій.
+        Breakwater відстежує, який застосунок відкрито на передньому плані, щоб застосовувати ваші правила блокування. Жодні дані не залишають ваш пристрій.
         Про додаток
     """.trimIndent()
 
     /** App Info page, as captured: only the short buttons, no "Примусово зупинити". */
     private val capturedUkAppInfo = """
-        Nudge - App Blocker
+        Breakwater
         Архівувати
         Видалити
         Зупинити
@@ -441,7 +447,7 @@ class StrictModeEscapeGuardTest {
     private val capturedUkAccessibilityList = """
         Доступність
         Завантажені додатки
-        Nudge - App Blocker
+        Breakwater
         Вимкнено
         TalkBack
     """.trimIndent()
@@ -453,7 +459,7 @@ class StrictModeEscapeGuardTest {
 
     @Test
     fun `captured Android 15 uk detail page is guarded by the shortcut row alone`() {
-        assertTrue(guards("Nudge - App Blocker: швидкий доступ\nВимкнено"))
+        assertTrue(guards("Breakwater: швидкий доступ\nВимкнено"))
     }
 
     @Test

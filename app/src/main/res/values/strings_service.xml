@@ -5,12 +5,12 @@
     <string name="service_autokick_cooldown_rule_site">Auto-kick cooldown — %1$s</string>
 
     <!-- The ongoing monitor notification (one sentence per ServiceHealth state) -->
-    <string name="service_health_disabled_title">Nudge is off</string>
+    <string name="service_health_disabled_title">Breakwater is off</string>
     <string name="service_health_disabled_body">Blocking is turned off</string>
-    <string name="service_health_not_blocking_title">Nudge is not blocking</string>
+    <string name="service_health_not_blocking_title">Breakwater is not blocking</string>
     <string name="service_health_permission_body">Accessibility access is off. Tap to turn it on.</string>
-    <string name="service_health_stopped_body">Your phone stopped Nudge. Tap to turn accessibility off and on again.</string>
-    <string name="service_health_active_title">Nudge is active</string>
+    <string name="service_health_stopped_body">Your phone stopped Breakwater. Tap to turn accessibility off and on again.</string>
+    <string name="service_health_active_title">Breakwater is active</string>
     <string name="service_health_active_body">Blocking is on</string>
 
     <!-- Bounce check-in notification -->
@@ -39,8 +39,8 @@
     <string name="service_counter_scrolls">scrolls</string>
     <string name="service_counter_videos">videos</string>
     <string name="service_time_left">%1$s left</string>
-    <string name="service_cover_blocked_by_nudge">Blocked by Nudge</string>
-    <string name="service_cover_tab_blocked_by_nudge">%1$s blocked by Nudge</string>
+    <string name="service_cover_blocked_by_nudge">Blocked by Breakwater</string>
+    <string name="service_cover_tab_blocked_by_nudge">%1$s blocked by Breakwater</string>
     <string name="service_cover_floating_body">This app is blocked right now, floating window included.</string>
     <string name="service_cover_close_window">Close window</string>
     <string name="service_cover_label">%1$s blocked by %2$s</string>

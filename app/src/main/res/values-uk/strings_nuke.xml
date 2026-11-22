@@ -84,8 +84,8 @@
     <string name="nuke_block_title">Вимкнено ядерним режимом.</string>
     <string name="nuke_block_body">%1$s вимкнено, доки не завершено ядерний режим. Проскануйте ядерний код, щоб завершити його.</string>
 
-    <string name="lock_guard_prompt_nuke">Ядерний режим увімкнено, а цей екран — спосіб його обійти. Введіть код, щоб змінити системні налаштування Nudge, або поверніться назад.</string>
-    <string name="lock_guard_prompt_strict">Суворий режим захищає цей екран. Розблокуйте, щоб змінити системні налаштування Nudge, або поверніться назад.</string>
+    <string name="lock_guard_prompt_nuke">Ядерний режим увімкнено, а цей екран — спосіб його обійти. Введіть код, щоб змінити системні налаштування Breakwater, або поверніться назад.</string>
+    <string name="lock_guard_prompt_strict">Суворий режим захищає цей екран. Розблокуйте, щоб змінити системні налаштування Breakwater, або поверніться назад.</string>
     <string name="lock_guard_title_nuke">Ядерний режим увімкнено</string>
     <string name="lock_guard_title_strict">Суворий режим заблоковано</string>
 

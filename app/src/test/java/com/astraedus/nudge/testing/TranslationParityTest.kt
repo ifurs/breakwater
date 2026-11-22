@@ -121,7 +121,7 @@ class TranslationParityTest {
         )
         val forgotten = en.filter { (key, e) ->
             val u = uk[key]
-            val words = e.text.replace(placeholder, " ").replace("Nudge", " ").split(Regex("[^A-Za-z]+"))
+            val words = e.text.replace(placeholder, " ").replace("Nudge", " ").replace("Breakwater", " ").split(Regex("[^A-Za-z]+"))
             u != null && u.text == e.text && key !in allowedSame && words.any { it.length > 3 }
         }.keys
         assertEquals("untranslated: $forgotten", emptySet<String>(), forgotten)

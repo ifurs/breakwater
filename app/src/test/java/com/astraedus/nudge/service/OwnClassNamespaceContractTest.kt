@@ -14,7 +14,7 @@ import org.junit.Test
  * The app has TWO identities and they are not interchangeable. This is what keeps anyone from
  * collapsing them again ([#33](https://github.com/astraedus/nudge/issues/33)).
  *
- * `applicationId = dev.astraedus.nudge` is what an accessibility event carries as its package.
+ * `applicationId = dev.ifurs.breakwater` is what an accessibility event carries as its package.
  * `namespace = com.astraedus.nudge` is what it carries as the prefix of a class name. For months
  * `NudgeAccessibilityService.shouldClearForOwnPackageEvent` asked `className.startsWith(applicationId)`
  * and therefore answered false for every event this app can emit: the `own_app_window` branch ran on

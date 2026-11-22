@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.nuke
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.lock.StrictModeEscapeGuard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,7 +81,7 @@ class NukePolicyTest {
     fun `this device's launcher, dialer and keyboard are protected like the static ones`() {
         val oemLauncher = "com.oem.home"
         val thirdPartyKeyboard = "org.futo.inputmethod.latin"
-        val nudge = "dev.astraedus.nudge"
+        val nudge = NudgeIdentity.APPLICATION_ID
         val deviceFloor = setOf(oemLauncher, thirdPartyKeyboard, nudge)
         val stored = state(packages = setOf(oemLauncher, thirdPartyKeyboard, nudge, instagram))
 

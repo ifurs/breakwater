@@ -126,7 +126,7 @@ tested `className.startsWith(ownPackageName)` where `ownPackageName` was the **a
 
 | | value | appears as |
 |---|---|---|
-| `applicationId` | `dev.astraedus.nudge` | `event.packageName` |
+| `applicationId` | `dev.ifurs.breakwater` | `event.packageName` |
 | `namespace` | `com.astraedus.nudge` | `event.className`, every class we ship |
 
 The prefix is therefore false for every event this app can emit, so `clearOverlays(packageName,
@@ -578,7 +578,7 @@ This is the part to reach for first on the next report, before reading any code.
 # 1. Install a debug build (or enable debug logging: tap the version number in Settings 7 times).
 #    adb install -r DROPS the accessibility grant — re-enable it or you capture nothing:
 adb -s "$DEVICE" shell settings put secure enabled_accessibility_services \
-  dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService
+  dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService
 adb -s "$DEVICE" shell settings put secure accessibility_enabled 1
 
 # 2. Record while reproducing:

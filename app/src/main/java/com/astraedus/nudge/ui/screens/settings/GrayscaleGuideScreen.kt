@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * The `adb` command the guide tells the user to run. Takes the applicationId (`dev.astraedus.nudge`),
+ * The `adb` command the guide tells the user to run. Takes the applicationId (`dev.ifurs.breakwater`),
  * NOT the class namespace (`com.astraedus.nudge`): `pm grant` resolves a package, and the namespace
  * is not one (#114).
  */

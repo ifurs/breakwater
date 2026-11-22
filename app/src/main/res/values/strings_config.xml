@@ -28,9 +28,9 @@
     <string name="config_mode_breathing">Breathing</string>
     <string name="config_mode_mirror">Mirror</string>
     <string name="config_tab_vanish_title">Hide the %1$s tab</string>
-    <string name="config_tab_vanish_description">While %1$s is blocked, Nudge covers the %1$s tab in %2$s\'s bottom bar, so the icon is not there and tapping it does nothing. The rest of %2$s works as normal.</string>
+    <string name="config_tab_vanish_description">While %1$s is blocked, Breakwater covers the %1$s tab in %2$s\'s bottom bar, so the icon is not there and tapping it does nothing. The rest of %2$s works as normal.</string>
     <string name="config_following_title">Open to Following instead of Home</string>
-    <string name="config_following_description">Experimental. When you open Instagram\'s home feed, Nudge switches it to Following, so you see posts from people you follow rather than suggested ones. You can switch back at any time. If Instagram changes its layout this quietly stops working.</string>
+    <string name="config_following_description">Experimental. When you open Instagram\'s home feed, Breakwater switches it to Following, so you see posts from people you follow rather than suggested ones. You can switch back at any time. If Instagram changes its layout this quietly stops working.</string>
 
     <!-- Always active -->
     <string name="config_section_always_active">Always Active</string>

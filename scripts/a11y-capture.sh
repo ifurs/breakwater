@@ -23,7 +23,7 @@
 #     neither of those this script records nothing.
 #   - The accessibility service actually enabled. `adb install -r` DROPS the grant — re-enable with:
 #       adb -s "$DEVICE" shell settings put secure enabled_accessibility_services \
-#         dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService
+#         dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService
 #       adb -s "$DEVICE" shell settings put secure accessibility_enabled 1
 #
 # USAGE:
@@ -67,7 +67,7 @@ if [[ "$ENABLED" != *"com.astraedus.nudge"* ]]; then
   echo "error: Nudge's accessibility service is not enabled on $DEVICE." >&2
   echo "       enabled_accessibility_services = '$ENABLED'" >&2
   echo "       adb -s $DEVICE shell settings put secure enabled_accessibility_services \\" >&2
-  echo "         dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService" >&2
+  echo "         dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService" >&2
   echo "       adb -s $DEVICE shell settings put secure accessibility_enabled 1" >&2
   exit 1
 fi

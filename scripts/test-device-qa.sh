@@ -74,7 +74,7 @@ rec() {
   printf '      uid=10678 userId=0\n      opPkg=%s\n      flags=0x10\n      notification=\n            number=0\n' "$pkg"
   [[ "$ts" == - ]] || printf '      mCreationTimeMs=%s\n      mUpdateTimeMs=%s\n      mInterruptionTimeMs=0\n' "$ts" "$ts"
 }
-N=dev.astraedus.nudge
+N=dev.ifurs.breakwater
 notif() { # <fixture file> -> "<count> <ts>"
   run_qa "$OUT" NOTIF_FIXTURE="$1" -- "nudge_notif_records" && tr -d '\n' <"$OUT"
 }
@@ -266,7 +266,7 @@ check "a run killed mid-case: the EXIT trap's cleanup puts it back" \
 
 # ─── 6. a11y_is_bound reads the Bound services line, never the Enabled line under it ────
 echo "a11y_is_bound:"
-ENABLED='Enabled services:{{dev.astraedus.nudge/com.astraedus.nudge.service.NudgeAccessibilityService}}'
+ENABLED='Enabled services:{{dev.ifurs.breakwater/com.astraedus.nudge.service.NudgeAccessibilityService}}'
 bound() { # <dumpsys accessibility text> -> "bound" / "unbound"
   run_qa "$OUT" FAKE_A11Y="$1" -- \
     "ash() { printf '%b\\n' \"\$FAKE_A11Y\"; }; if a11y_is_bound; then echo bound; else echo unbound; fi" || true
@@ -275,7 +275,7 @@ bound() { # <dumpsys accessibility text> -> "bound" / "unbound"
 check "suppressed (Bound empty, grant still enabled): unbound" \
   test "$(bound "    Bound services:{}\r\n    $ENABLED")" = unbound
 check "bound: Nudge's label on the Bound line" \
-  test "$(bound "    Bound services:{Service[label=Nudge - App Blocker, feedbackType[FEEDBACK_GENERIC]]}\n    $ENABLED")" = bound
+  test "$(bound "    Bound services:{Service[label=Breakwater, feedbackType[FEEDBACK_GENERIC]]}\n    $ENABLED")" = bound
 check "another service bound, Nudge only enabled: unbound" \
   test "$(bound "    Bound services:{Service[label=TalkBack, feedbackType[FEEDBACK_SPOKEN]]}\n    $ENABLED")" = unbound
 check "grant off entirely: unbound" \
@@ -613,9 +613,9 @@ pick_bounce_apps 3; echo rc=\$?" || true
 pick "com.a com.b com.c com.d" com.a,com.b,com.c,com.d "com.a:yes com.b:yes com.c:yes com.d:yes"
 check "pick_bounce_apps: the first three launchable candidates, in order" \
   test "$(tr '\n' ' ' <"$OUT")" = "com.a com.b com.c rc=0 "
-pick "com.google.android.youtube com.google.android.contacts com.google.android.keep com.google.android.apps.nexuslauncher dev.astraedus.nudge com.a com.b com.c" \
-  com.google.android.youtube,com.google.android.contacts,com.google.android.keep,com.google.android.apps.nexuslauncher,dev.astraedus.nudge,com.a,com.b,com.c \
-  "com.google.android.youtube:yes com.google.android.contacts:yes com.google.android.keep:yes com.google.android.apps.nexuslauncher:yes dev.astraedus.nudge:yes com.a:yes com.b:yes com.c:yes"
+pick "com.google.android.youtube com.google.android.contacts com.google.android.keep com.google.android.apps.nexuslauncher dev.ifurs.breakwater com.a com.b com.c" \
+  com.google.android.youtube,com.google.android.contacts,com.google.android.keep,com.google.android.apps.nexuslauncher,dev.ifurs.breakwater,com.a,com.b,com.c \
+  "com.google.android.youtube:yes com.google.android.contacts:yes com.google.android.keep:yes com.google.android.apps.nexuslauncher:yes dev.ifurs.breakwater:yes com.a:yes com.b:yes com.c:yes"
 check "pick_bounce_apps: never YouTube, the group/boundary apps, the launcher or Nudge" \
   test "$(grep -v '^\[qa\]' "$OUT" | tr '\n' ' ')" = "com.a com.b com.c rc=0 "
 pick "com.google.android.youtube com.a com.b com.c" com.google.android.youtube,com.a,com.b,com.c \
@@ -800,7 +800,7 @@ ncase() { # <case fn> <flags: debug|release|qa> [part rc] [nokey] -> "<case rc>|
         case '$2' in
           release) echo '    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]' ;;
           debug)   echo '    flags=[ DEBUGGABLE HAS_CODE ]' ;;
-          qa)      echo '    flags=[ DEBUGGABLE HAS_CODE ]'; echo '    dev.astraedus.nudge/com.astraedus.nudge.qa.QaControlReceiver' ;;
+          qa)      echo '    flags=[ DEBUGGABLE HAS_CODE ]'; echo '    dev.ifurs.breakwater/com.astraedus.nudge.qa.QaControlReceiver' ;;
         esac
       else echo \"ash \$*\" >>\"\$NLOG\"; fi
     }
@@ -835,7 +835,7 @@ check "nuke_scan_available reads a DEBUGGABLE build as debug even when dumpsys k
   test "$(cat "$OUT")" = "yes"
 run_qa "$OUT" -- "$(bigdump '    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]'); nuke_scan_available && echo yes || echo no" || true
 check "nuke_scan_available still reads a release build as release" test "$(cat "$OUT")" = "no"
-run_qa "$OUT" -- "$(bigdump '    dev.astraedus.nudge/com.astraedus.nudge.qa.QaControlReceiver'); nuke_has_qa_receiver && echo yes || echo no" || true
+run_qa "$OUT" -- "$(bigdump '    dev.ifurs.breakwater/com.astraedus.nudge.qa.QaControlReceiver'); nuke_has_qa_receiver && echo yes || echo no" || true
 check "nuke_has_qa_receiver finds the receiver in a long dump" test "$(cat "$OUT")" = "yes"
 : >"$NLOG"; run_qa "$OUT" NLOG="$NLOG" -- "$(bigdump '  mInputShown=true'); sleep() { :; }; nuke_hide_keyboard" || true
 check "nuke_hide_keyboard presses Back when the keyboard is shown, even in a long dump" \

@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.health
 
+import com.astraedus.nudge.NudgeIdentity
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,13 +14,13 @@ import org.junit.Test
  * answer in either direction is expensive: a false negative pushes "blocking has stopped" at a
  * user whose blocking is fine, a false positive is the silent failure we shipped for months.
  *
- * Note the two package names in play. Nudge's `applicationId` is `dev.astraedus.nudge` and its
+ * Note the two package names in play. Nudge's `applicationId` is `dev.ifurs.breakwater` and its
  * `namespace` is `com.astraedus.nudge`, so the component string pairs one with the other. Any
  * matcher that assumes the class is a child of the package is wrong here.
  */
 class EnabledAccessibilityServicesTest {
 
-    private val pkg = "dev.astraedus.nudge"
+    private val pkg = NudgeIdentity.APPLICATION_ID
     private val cls = "com.astraedus.nudge.service.NudgeAccessibilityService"
 
     private fun contains(raw: String?) = EnabledAccessibilityServices.contains(raw, pkg, cls)
@@ -71,7 +73,7 @@ class EnabledAccessibilityServicesTest {
      */
     @Test
     fun `a package that merely contains ours is not us`() {
-        assertFalse(contains("com.evil.dev.astraedus.nudge.clone/com.evil.Service"))
+        assertFalse(contains("com.evil.$pkg.clone/com.evil.Service"))
     }
 
     @Test

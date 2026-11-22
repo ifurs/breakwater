@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.sitting
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.events.ForegroundSignal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -616,8 +618,8 @@ class SittingTrackerTest {
     fun `no non-app signal can end a sitting`() {
         val inert = listOf(
             ForegroundSignal.SystemSurface("com.android.systemui"),
-            ForegroundSignal.OwnUi("dev.astraedus.nudge"),
-            ForegroundSignal.AwarenessOverlay("dev.astraedus.nudge"),
+            ForegroundSignal.OwnUi(NudgeIdentity.APPLICATION_ID),
+            ForegroundSignal.AwarenessOverlay(NudgeIdentity.APPLICATION_ID),
             ForegroundSignal.Transient("com.futo.inputmethod.latin"),
             ForegroundSignal.PipOnly("com.google.android.youtube"),
             ForegroundSignal.NotForeground("com.instagram.android")

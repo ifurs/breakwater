@@ -51,7 +51,7 @@
     <string name="home_short_status_scheduled">Блокується лише за розкладом</string>
     <string name="home_short_open_settings">Відкрити налаштування: %1$s</string>
     <string name="home_short_none_installed">Застосунків Instagram, YouTube і TikTok на цьому телефоні немає.</string>
-    <string name="home_short_accessibility_off">Nudge поки не бачить Reels і Shorts. Увімкніть службу спеціальних можливостей.</string>
+    <string name="home_short_accessibility_off">Breakwater поки не бачить Reels і Shorts. Увімкніть службу спеціальних можливостей.</string>
     <string name="home_short_accessibility_action">Увімкнути</string>
     <string name="home_short_unlock_prompt">Вимкнути блокування коротких відео у %1$s</string>
 </resources>

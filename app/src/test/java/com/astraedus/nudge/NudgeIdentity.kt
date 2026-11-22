@@ -9,7 +9,7 @@ package com.astraedus.nudge
  *
  * | | value | where it appears |
  * |---|---|---|
- * | `applicationId` | `dev.astraedus.nudge` | `AccessibilityEvent.getPackageName()` |
+ * | `applicationId` | `dev.ifurs.breakwater` | `AccessibilityEvent.getPackageName()` |
  * | `namespace` | `com.astraedus.nudge` | `AccessibilityEvent.getClassName()`, every class we ship |
  *
  * [#33](https://github.com/astraedus/nudge/issues/33) is what happens when a predicate treats them

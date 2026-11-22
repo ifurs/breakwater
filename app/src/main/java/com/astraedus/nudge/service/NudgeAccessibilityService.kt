@@ -474,7 +474,7 @@ class NudgeAccessibilityService : AccessibilityService() {
          *
          * Never a literal, and never `applicationContext.packageName`. That second mistake is
          * [#33](https://github.com/astraedus/nudge/issues/33): the applicationId is
-         * `dev.astraedus.nudge` and every class name an accessibility event can carry starts with
+         * `dev.ifurs.breakwater` and every class name an accessibility event can carry starts with
          * `com.astraedus.nudge`, so `className.startsWith(packageName)` was false for every event
          * this app can emit and [shouldClearForOwnPackageEvent] was dead in production for months.
          * Its unit tests passed throughout, because they supplied a matching value production never

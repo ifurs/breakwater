@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.events
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.engine.FirstUnlockState
 import com.astraedus.nudge.domain.engine.BlockEngine
 import com.astraedus.nudge.domain.engine.RuleEvaluator
@@ -36,7 +38,7 @@ import com.astraedus.nudge.testing.anAccessibilityEvent
  */
 class A11yCaptureReplayTest {
 
-    private val ownPackage = "dev.astraedus.nudge"
+    private val ownPackage = NudgeIdentity.APPLICATION_ID
     private val pixelLauncher = "com.google.android.apps.nexuslauncher"
 
     private val classifier = EventClassifier(

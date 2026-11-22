@@ -43,7 +43,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_ID="dev.astraedus.nudge"
+APP_ID="dev.ifurs.breakwater"
 A11Y_COMPONENT="${APP_ID}/com.astraedus.nudge.service.NudgeAccessibilityService"
 QA_RECEIVER="${APP_ID}/com.astraedus.nudge.qa.QaControlReceiver"
 QA_ACTION="dev.astraedus.nudge.qa.CMD"
@@ -179,7 +179,7 @@ install_qa() { # apk case...
 a11y_bound() {
   # The LABEL on the `Bound services` line, never a grep that can reach the Enabled line below it
   # (DeviceText.boundServicesLine says why).
-  ash dumpsys accessibility 2>/dev/null | tr -d '\r' | grep -m1 'Bound services:' | grep -q 'label=Nudge'
+  ash dumpsys accessibility 2>/dev/null | tr -d '\r' | grep -m1 'Bound services:' | grep -q 'label=Breakwater'
 }
 
 # Applies the OS grants and proves the accessibility one STUCK: the OS can prune a fresh grant

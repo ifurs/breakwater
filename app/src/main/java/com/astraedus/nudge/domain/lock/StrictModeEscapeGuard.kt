@@ -16,16 +16,16 @@ import java.util.Locale
  *
  * ## Real-device signatures this matcher was tuned to
  * Captured via `astra-adb dump` on a Pixel 3 (Android 12, AOSP/Pixel Settings) on 2026-06-24,
- * app label "Nudge - App Blocker", package `dev.astraedus.nudge`:
+ * app label "Breakwater", package `dev.ifurs.breakwater`:
  *
  * - **Accessibility detail page** — window `com.android.settings/.SubSettings`. Node text includes
- *   the toggle label "Use Nudge - App Blocker", "Nudge - App Blocker shortcut", and the service
+ *   the toggle label "Use Breakwater", "Breakwater shortcut", and the service
  *   description. Discriminator: the app label co-occurs with the word "shortcut" OR the "Use <label>"
- *   toggle row. The Accessibility LIST page ALSO shows "Nudge - App Blocker" (and an "Accessibility"
+ *   toggle row. The Accessibility LIST page ALSO shows "Breakwater" (and an "Accessibility"
  *   header), so we deliberately do NOT key on the bare word "accessibility" — that would trap the
  *   user on the list of all services. "shortcut" / "use <label>" are present only on the detail page.
  * - **App Info page** — window `com.android.settings/.applications.InstalledAppDetails`. Node text
- *   includes the app label "Nudge - App Blocker" plus action buttons "Force stop" and "Uninstall".
+ *   includes the app label "Breakwater" plus action buttons "Force stop" and "Uninstall".
  *   Discriminator: app label co-occurs with "Force stop" or "Uninstall".
  *
  * ## Safety bias
@@ -69,7 +69,7 @@ object StrictModeEscapeGuard {
      *
      * - **English**: AOSP/Pixel `accessibility_shortcut_title` "...shortcut".
      * - **Ukrainian**: Android 15 (AOSP Settings, uk) draws the shortcut row as
-     *   "Nudge - App Blocker: швидкий доступ", CAPTURED on the emulator on 2026-11-18. "Ярлик ..."
+     *   "Breakwater: швидкий доступ", CAPTURED on the emulator on 2026-11-18. "Ярлик ..."
      *   and "Швидке ввімкнення" are the older AOSP wording from memory (other Android versions and
      *   OEMs); they stay as extra signals and are not device-verified.
      *
@@ -89,9 +89,9 @@ object StrictModeEscapeGuard {
      * the label alone).
      */
     private val ACCESSIBILITY_SWITCH_PREFIXES = listOf(
-        "Use ",                       // en: "Use Nudge - App Blocker"
-        "Використовувати ",           // uk: "Використовувати Nudge - App Blocker"
-        "Використовувати сервіс "     // uk: "Використовувати сервіс Nudge - App Blocker"
+        "Use ",                       // en: "Use Breakwater"
+        "Використовувати ",           // uk: "Використовувати Breakwater"
+        "Використовувати сервіс "     // uk: "Використовувати сервіс Breakwater"
     ).map { normalize(it) + " " } // normalize trims, the separating space is part of the prefix
 
     /**
@@ -177,7 +177,7 @@ object StrictModeEscapeGuard {
      * @param windowText concatenated, user-visible text harvested from the foreground window's
      *   node tree (text + content descriptions). Case-insensitive matching is applied internally.
      * @param appLabel our own app's user-visible label (read at runtime from PackageManager so we
-     *   never hardcode "Nudge - App Blocker"); e.g. "Nudge - App Blocker".
+     *   never hardcode "Breakwater"); e.g. "Breakwater".
      * @param strictEnabled whether Strict Mode is currently on. OFF → never guard.
      * @param withinGrace whether we are inside a post-unlock grace window. In grace → never guard
      *   (so a user who just solved the challenge can actually complete the disable they committed to).

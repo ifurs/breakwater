@@ -20,7 +20,7 @@
 #     coordinates are banned here). The importer is a real user-facing path, it takes
 #     the exact field values the cases need (delaySeconds=5, dailyLimitMinutes=1),
 #     and duplicate rules are skipped — so this is idempotent.
-appId: dev.astraedus.nudge
+appId: dev.ifurs.breakwater
 ---
 # ─── Onboarding: three pages, Next / Next / Get Started ───────────────────────
 - launchApp:
@@ -117,7 +117,7 @@ appId: dev.astraedus.nudge
 # restores Home's SCROLL POSITION, and we scrolled down to reach Settings — anything
 # further up the dashboard (e.g. "Screen Time") is legitimately off-screen on return.
 - extendedWaitUntil:
-    visible: "Nudge"
+    visible: "Breakwater"
     timeout: 15000
 - scrollUntilVisible:
     element:

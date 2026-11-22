@@ -49,7 +49,7 @@ class BlockLaunchGuard @Inject constructor() {
      * rather than by watching for a Nudge window in the accessibility stream. The stream cannot tell
      * us: the overlay TASK's first window arrives ~600ms before the overlay does and carries a
      * framework class name, and `className.startsWith(ownPackageName)` cannot separate them either,
-     * because this app's applicationId (`dev.astraedus.nudge`) is not the prefix of its class names
+     * because this app's applicationId (`dev.ifurs.breakwater`) is not the prefix of its class names
      * (`com.astraedus.nudge.*`). The activity knows when it is on screen; asking it is both simpler
      * and correct.
      */

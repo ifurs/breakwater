@@ -39,7 +39,7 @@
 set -euo pipefail
 
 DEVICE="${ADB_SERIAL:-192.168.1.68:5555}"
-PKG="dev.astraedus.nudge"
+PKG="dev.ifurs.breakwater"
 OUT_DIR="/home/astraedus/Pictures/screenshots"
 mkdir -p "$OUT_DIR"
 

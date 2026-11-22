@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.events
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.model.RuleLabel
 import com.astraedus.nudge.domain.engine.FirstUnlockState
 import com.astraedus.nudge.data.db.entity.BlockRule
@@ -45,7 +47,7 @@ class AllAppsBrowserCaptureReplayTest {
     private val pixelLauncher = "com.google.android.apps.nexuslauncher"
 
     private val classifier = EventClassifier(
-        ownPackageName = "dev.astraedus.nudge",
+        ownPackageName = NudgeIdentity.APPLICATION_ID,
         systemPackages = setOf(
             "com.android.systemui",
             "com.android.launcher3",

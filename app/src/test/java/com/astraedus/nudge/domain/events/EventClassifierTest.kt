@@ -1,5 +1,7 @@
 package com.astraedus.nudge.domain.events
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.service.AwarenessOverlayWindow
 import com.astraedus.nudge.testing.anAccessibilityEvent
 import org.junit.Assert.assertEquals
@@ -22,7 +24,7 @@ import org.junit.Test
  */
 class EventClassifierTest {
 
-    private val ownPackage = "dev.astraedus.nudge"
+    private val ownPackage = NudgeIdentity.APPLICATION_ID
     private val framework = "android"
 
     /**

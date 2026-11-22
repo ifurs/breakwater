@@ -1,5 +1,7 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.engine.FirstUnlockState
 import com.astraedus.nudge.domain.block.BlockLaunchGate
 import com.astraedus.nudge.domain.engine.BlockEngine
@@ -42,7 +44,7 @@ import com.astraedus.nudge.testing.anActiveRule
  */
 class TrampolineLaunchReplayTest {
 
-    private val nudge = "dev.astraedus.nudge"
+    private val nudge = NudgeIdentity.APPLICATION_ID
     private val launcher = "com.google.android.apps.nexuslauncher"
     private val camera = "com.google.android.GoogleCamera"
     private val permissionController = "com.google.android.permissioncontroller"

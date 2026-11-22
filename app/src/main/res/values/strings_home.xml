@@ -57,7 +57,7 @@
     <!-- TalkBack action label of a row's body; %1$s is the app name. -->
     <string name="home_short_open_settings">Open settings for %1$s</string>
     <string name="home_short_none_installed">Instagram, YouTube and TikTok are not installed on this phone.</string>
-    <string name="home_short_accessibility_off">Nudge can\'t see Reels or Shorts yet. Turn on the accessibility service.</string>
+    <string name="home_short_accessibility_off">Breakwater can\'t see Reels or Shorts yet. Turn on the accessibility service.</string>
     <string name="home_short_accessibility_action">Turn on</string>
     <!-- Shown in the Strict Mode unlock dialog; %1$s is the app\'s name. -->
     <string name="home_short_unlock_prompt">Turn off short-video blocking in %1$s</string>

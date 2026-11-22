@@ -32,11 +32,11 @@
     <string name="components_custom_time_range_error">Введіть число від %1$d до %2$d</string>
     <string name="components_minutes_field_invalid">Введіть від 1 до %1$d хв або залиште поле порожнім, щоб вимкнути</string>
 
-    <string name="components_disclosure_title">Як працює Nudge</string>
-    <string name="components_disclosure_what">Nudge використовує службу спеціальних можливостей Android, щоб визначити, який застосунок зараз відкрито на екрані.</string>
-    <string name="components_disclosure_why">Завдяки цьому Nudge може показувати дихальні вправи, затримки або блокування, коли ви відкриваєте застосунки, які вирішили обмежити.</string>
-    <string name="components_disclosure_reads">Nudge зчитує лише назву застосунку на передньому плані. Він не читає ваші повідомлення, натискання клавіш, паролі чи вміст екрана.</string>
-    <string name="components_disclosure_local">Усі дані залишаються на вашому пристрої. У Nudge немає дозволу на доступ до інтернету, тож він не може нікуди надсилати дані.</string>
+    <string name="components_disclosure_title">Як працює Breakwater</string>
+    <string name="components_disclosure_what">Breakwater використовує службу спеціальних можливостей Android, щоб визначити, який застосунок зараз відкрито на екрані.</string>
+    <string name="components_disclosure_why">Завдяки цьому Breakwater може показувати дихальні вправи, затримки або блокування, коли ви відкриваєте застосунки, які вирішили обмежити.</string>
+    <string name="components_disclosure_reads">Breakwater зчитує лише назву застосунку на передньому плані. Він не читає ваші повідомлення, натискання клавіш, паролі чи вміст екрана.</string>
+    <string name="components_disclosure_local">Усі дані залишаються на вашому пристрої. У Breakwater немає дозволу на доступ до інтернету, тож він не може нікуди надсилати дані.</string>
     <string name="components_disclosure_confirm">Зрозуміло</string>
     <string name="components_disclosure_dismiss">Не зараз</string>
 
@@ -129,7 +129,7 @@
     <string name="components_usage_reminder_title">Нагадування про час</string>
     <string name="components_usage_reminder_field_label">Нагадати через</string>
     <string name="components_usage_reminder_field_supporting">Рахує час у застосунку за один сеанс. Одне попередження, нічого не закривається.</string>
-    <string name="components_usage_reminder_blocked_warning">Сповіщення для Nudge вимкнено, тож це нагадування не дійде до вас. Торкніться, щоб увімкнути.</string>
+    <string name="components_usage_reminder_blocked_warning">Сповіщення для Breakwater вимкнено, тож це нагадування не дійде до вас. Торкніться, щоб увімкнути.</string>
     <string name="components_usage_reminder_superseded">Автовихід через %1$d хв спрацює першим, тож нагадування не з’явиться. Задайте менше за %1$d хв, щоб отримувати обидва.</string>
     <string name="components_usage_reminder_info">Отримайте одне делікатне сповіщення, коли проведете в застосунку стільки часу за один сеанс. Воно нічого не закриває, лише повідомляє.\n\nЛічильник скидається так само, як в автовиході: коротка відлучка в інший застосунок не перериває сеанс, а справжня перерва (від 5 хвилин) починає новий. Якщо автовихід за часом налаштовано на такий самий або коротший час, спрацює автовихід, а нагадування буде пропущено.</string>
     <string name="components_usage_reminder_info_apps_only">Лише для застосунків: на сайти нижче не поширюється.</string>

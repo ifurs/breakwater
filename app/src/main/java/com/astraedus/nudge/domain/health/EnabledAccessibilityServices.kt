@@ -33,7 +33,7 @@ object EnabledAccessibilityServices {
      * Entries are `package/class`. The class half is normally the flattened absolute name, but a
      * relative form (`.service.NudgeAccessibilityService`) is accepted too: `ComponentName`'s own
      * short-flattening produces it, and it is resolved by suffix rather than by prepending the
-     * package, because Nudge's `applicationId` (`dev.astraedus.nudge`) is deliberately not its
+     * package, because Nudge's `applicationId` (`dev.ifurs.breakwater`) is deliberately not its
      * `namespace` (`com.astraedus.nudge`) — prepending would never match.
      */
     fun contains(raw: String?, packageName: String, className: String): Boolean {

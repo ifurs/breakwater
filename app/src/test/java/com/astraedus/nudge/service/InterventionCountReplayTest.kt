@@ -1,5 +1,7 @@
 package com.astraedus.nudge.service
 
+import com.astraedus.nudge.NudgeIdentity
+
 import com.astraedus.nudge.domain.block.BlockLaunchGate
 import com.astraedus.nudge.domain.block.delayKey
 import com.astraedus.nudge.domain.events.A11yEventType
@@ -46,7 +48,7 @@ import com.astraedus.nudge.testing.anAccessibilityEvent
  */
 class InterventionCountReplayTest {
 
-    private val nudge = "dev.astraedus.nudge"
+    private val nudge = NudgeIdentity.APPLICATION_ID
     private val launcher = "com.google.android.apps.nexuslauncher"
     private val blocked = "com.instagram.android"
     private val otherApp = "com.google.android.keep"

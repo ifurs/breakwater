@@ -24,7 +24,7 @@ import androidx.test.uiautomator.UiDevice
  */
 object QaDevice {
 
-    const val NUDGE_PACKAGE = "dev.astraedus.nudge"
+    const val NUDGE_PACKAGE = "dev.ifurs.breakwater"
 
     /** Whether this run keeps other accessibility services alive. False only on the control run. */
     val dontSuppress: Boolean by lazy {
